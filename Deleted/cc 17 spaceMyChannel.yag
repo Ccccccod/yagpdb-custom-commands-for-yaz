@@ -1,0 +1,11 @@
+{{ if lt (len .Args) 3 }}
+    {{sendMessage nil "Not enough arguments passed\nSyntax is `=spacemychannel <channel> <text>` or `=smc <channel> <text>` or `=space <channel> <text>`" }}
+    {{else}} {{if eq "" (reFind "^(<#\\d{18}>|\\d{18})$" (index .Args 1) ) }}
+    {{sendMessage nil (joinStr "" "I can't find channel \"" (index .Args 1) "\"\nSyntax is `=spacemychannel <channel> <text>` or `=smc <channel> <text>` or `=space <channel> <text>`") }}
+    {{else}}
+    {{/* COMMAND START HERE */}}
+    {{$s:= (joinStr " " (slice .CmdArgs 1) ) }}
+    {{$s := (reReplace " " $s "  ") }}
+    {{$ch := (reFind "\\d{18}" (index .Args 1) ) }}
+    {{editChannelName $ch $s}}
+    {{end}} {{end}}

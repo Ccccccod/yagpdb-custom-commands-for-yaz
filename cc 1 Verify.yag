@@ -1,0 +1,95 @@
+{{if not (reFind "[uU][nN]" (index .Args 0))}}
+{{/*UNVERIFY*/}}
+{{$logEmbed := 1}}
+{{ if or (hasRoleID 530934024492023818) (hasRoleID 529140551946338305) }}
+{{ if gt (len .Args) 1 }}
+{{ $user := (userArg (index .Args 1)) }}
+{{if $user}}
+{{if not (or (targetHasRoleID $user.ID 529155155103580191) (targetHasRoleID $user.ID 529172310263857182))}}
+{{if $user.Bot}} {{ giveRoleID $user.ID 529172310263857182 }} {{else}} {{ giveRoleID $user.ID 529155155103580191}} {{end}}
+{{takeRoleID $user.ID 670836200054980618}}{{takeRoleID $user.ID 545436740089806852}}
+{{$messageID := sendMessageRetID nil (joinStr "" "<@" $user.ID "> has been verified by " .User.Mention) }}
+{{if eq $logEmbed 1}}
+{{$avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" $user.ID "/" $user.Avatar ".png") }}
+{{sendMessage 568917434581647360 (cembed "author" (sdict "name" $user.String "icon_url" $avatar) "color" 65280 "title" "Verified" "fields" (cslice (sdict "name" "User" "value" $user.Mention "inline" true) (sdict "name" "Moderator" "value" .User.Mention "inline" true) (sdict "name" "Message" "value" (joinStr "" "[Message link](https://discordapp.com/channels/529138809246580745/" .Channel.ID "/" $messageID ")") "inline" true)) "footer" (sdict "text" (joinStr "" "User ID: " $user.ID)) "timestamp" currentTime)}}
+{{else}}{{sendMessage 568917434581647360 (joinStr "" "<@" $user.ID "> has been **verified** by " .User.Mention " at " ( ( currentTime.Add -14400000000000 ).Format "Mon Jan 02 3:04:05 PM 2006 EST") ) }}{{end}}
+{{else}} {{ sendMessage nil "This member isn't unverified" }} {{end}}
+{{else}} {{ sendMessage nil "I can't find this member" }} {{end}}
+{{else}} {{ sendMessage nil "Not enough arguments passed\nSyntax is `=verify <member.mention / member.id>`" }} {{ end }}
+{{else}} {{ sendMessage nil "You aren't Staff, you can't do this 😃" }} {{end}}
+{{else}}
+
+{{/*UNVERIFY*/}}
+{{if or (hasRoleID 530934024492023818) (hasRoleID 529140551946338305) }}
+{{if gt (len .Args) 1}}
+{{$user := userArg (index .Args 1)}}
+{{if $user}}
+{{if or (targetHasRoleID $user.ID 529155155103580191) (targetHasRoleID $user.ID 529172310263857182)}}
+{{takeRoleID $user.ID 529155155103580191 0}}{{takeRoleID $user.ID 529172310263857182 0}} {{takeRoleID $user.ID 670836200054980618 0}}
+{{giveRoleID $user.ID 545436740089806852}}
+{{$messageID := sendMessageRetID nil (joinStr "" "<@" $user.ID "> has been **verified** by " .User.Mention)}}
+{{$avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" $user.ID "/" $user.Avatar ".png") }}
+{{sendMessage 568917434581647360 (cembed "author" (sdict "name" $user.String "icon_url" $avatar) "color" 16711680 "title" "Unverified" "fields" (cslice (sdict "name" "User" "value" $user.Mention "inline" true) (sdict "name" "Moderator" "value" .User.Mention "inline" true) (sdict "name" "Message" "value" (joinStr "" "[Message link](https://discordapp.com/channels/529138809246580745/" .Channel.ID "/" $messageID ")") "inline" true)) "footer" (sdict "text" (joinStr "" "User ID: " $user.ID)) "timestamp" currentTime)}}
+{{else}}This member isn't verified{{end}}
+{{else}}I can't find this member{{end}}
+{{else}}Not enough arguments passed
+Syntax is `=unverify <member.mention / member.id>`{{ end }}
+{{else}}You aren't Staff, you can't do this 😃{{end}}
+
+{{end}}
+
+{{$id := .User.ID}}
+{{$args := parseArgs 1 "" (carg "member" "User") (carg "string" "Unverify?")}}
+	{{$yaz := 529140551946338305}}
+	{{$staff := 530934024492023818}}
+	{{$mania := 529155155103580191}}
+	{{$bot := 529172310263857182}}
+	{{$being := 670836200054980618}}
+	{{$unverified := 545436740089806852}}
+	{{$logChannel := 568917434581647360}}
+	{{$mod := getMember .User.ID}}
+	{{$member := $args.Get 0}}
+	{{$user := $member.User}}
+	{{$avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" (toString $user.ID) "/" $user.Avatar ".png")}}
+	{{define "log"}}
+	{{end}}
+	{{$log := false}}
+{{if $args.IsSet 1}}
+	{{if or (in $mod.Roles $yaz) (in $mod.Roles $staff)}}
+		{{if or (in $mod.Roles $mania) (in $mod.Roles $bot)}}
+			{{takeRoleID $user.ID $bot}}
+			{{takeRoleID $user.ID $mania}}
+			{{giveRoleID $user.ID $unverified}}
+			{{$log = sdict "color" 16711680 "title" "Unverified" "un" "un"}}
+		{{end}}
+	{{end}}
+{{else}}
+	{{if or (in $mod.Roles $yaz) (in $mod.Roles $staff)}}
+		{{if not (or (in $member.Roles $mania) (in $member.Roles $bot))}}
+			{{if $member.User.Bot}}
+				{{giveRoleID $user.ID $bot}}
+			{{else}}
+				{{giveRoleID $user.ID $mania}}
+			{{end}}
+			{{takeRoleID $user.ID $being}}{{takeRoleID $user.ID $unverified}}
+			{{$log = sdict "color" 65280 "title" "Verified" "un" ""}}
+		{{else}}
+			{{$messageID := sendMessageRetID nil (joinStr "" $mod.User.Mention "This member is Verified")}}
+			{{deleteMessage nil $messageID 5}}
+		{{end}}
+	{{end}}
+{{end}}
+{{with $log}}
+	{{$messageID := sendMessageRetID nil (joinStr "" $user.Mention " has been " .un "verified by " $mod.User.Mention)}}
+	{{sendMessage $logChannel (cembed
+		"author" (sdict "name" $user.String "icon_url" $avatar)
+		"color" .color
+		"title" (title (print .un "verify"))
+		"fields" (cslice
+			(sdict "name" "User" "value" $user.Mention "inline" true)
+			(sdict "name" "Moderator" "value" $mod.User.Mention "inline" true)
+			(sdict "name" "Message" "value" (printf "[Message link](https://discordapp.com/channels/529138809246580745/%d/%d)" $.Channel.ID $messageID) "inline" true))
+		"footer" (sdict "text" (joinStr "" "User ID: " $user.ID))
+		"timestamp" currentTime
+	)}}
+{{end}}

@@ -1,0 +1,78 @@
+{{$id := .User.ID}}{{$id64 := toInt64 $id}}
+{{/*TEST*/}}
+{{editMessage 688434355571654728 688442789884592156 (cembed "title" "Basic Guides"
+"description" "Read this so that you'll be able to understand advanced guilds"
+"color" 0x00ffcc
+"fields" (cslice
+(sdict "name" "Syntax" "value" "`<>`: required parameter\n`[]`: optional paramete\n`<thing1 / thing2>`: select one of these option\n`[**]`: comment" "inline" true)
+(sdict "name" "\\" "value" `The backslash is used as an escape character, to indicate that the character following it should be treated specially (if it would otherwise be treated normally), or normally (if it would otherwise be treated specially). For instance, inside a string literal the sequence \n produces a newline byte instead of an 'n', and the sequence \\" produces an actual double quote rather than the special meaning of the double quote ending the string. An actual backslash is produced by a double backslash \\\\.` "inline" true)
+)
+)}}
+
+{{dbSetExpire 0 "test" (sdict "a" .Guild.MemberCount "b" 100) 30}}
+{{$v := sdict (dbGet 0 "test").Value}}
+{{joinStr " " ($v.Get "a") $v.b}}
+
+{{$emojis := cslice}}
+{{range (getMessage 631814483181830144 657309180717170708).Reactions}}
+	{{$emojis = $emojis.Append .Emoji}}
+{{end}}
+{{printf "%T" (index $emojis 0)}}
+
+{{/*FIX MESSAGE COUNT*/}}
+{{if false}}
+{{dbDel 530912139481972757 "message count"}}
+{{range dbTopEntries "message count" 100 0}}<#{{.UserID}}>{{end}}
+{{end}}
+
+{{/*PROMOTION*/}}
+{{if false}}
+{{/*dbSet (toInt64 0) "promotion" (sdict "406794858464804866" 0 "422129522792595456" 1 "432256251624292362" 1 "424280642474213386" 1 "471677056766312448" 1 "347930933841887243" 2 "510485346761441320" 2 "229016768054689792" 3 "541701569859813385" 3 "394968500952891392" 5 "536624510477008908" 5 "483099500915720193" 5 "659443863085252610" 5)*/}}
+{{end}}
+
+{{/*WHOOP*/}}
+{{if false}}
+{{addMessageReactions 529138809246580747 806976826886324245 "whoop:448566329922813953" "whoop2:448846256312156173" "whoop3:448846255976742944" "whoop4:448846256500899841" "whoop5:448846256450830336" "whoop6:448846256295378945" "whoop7:448846256437985282" "whoop8:448846256589111296" "ablobbouncing:448846256018554891" "cool_whoop:448846256366813214"}}
+{{end}}
+
+{{/*SERVER STATS*/}}
+{{if false}}
+{{$key := "message count"}}{{$s := ""}}{{$total := 0}}
+{{range $i, $t := dbTopEntries $key 100 0}}
+{{if in (cslice 529145537619034116 600766936518754315 661020350452334613 529138809246580746 533097485942652928 529157511652311040 529138809246580748) (getChannel (toInt (toInt64 .UserID))).ParentID}}
+{{$total = add $total (toInt .Value)}}
+{{$s = joinStr "" $s "**" (add $i 1) " :** <#" (toInt .UserID) "> " (toInt .Value) "\n"}}{{end}}
+{{end}}
+{{$s = joinStr "" "**" (currentTime.Format "Monday, 02 January 2006") "\nMessage Count\nTotal : **" $total "\n" $s}}
+{{editMessage 671389089718730782 671405332664287232 $s}}
+{{end}}
+
+{{/*VERIFICATION LANGUAGE*/}}
+{{if false}}
+{{editMessage 670518064235937823 670533679206105099 (cembed "color" 16711782 "title" "Select Language" "description" (joinStr "" "🇬🇧 : English\n🇮🇳 : हिन्दू\n🇪🇸 : Español\n🇸🇦 : العربي\n🇷🇺 : Русский\n🇨🇵 : Français\n🇯🇵 : 日本語\n🇳🇱 : Nederlands\n🇰🇷 : 한국어\n🇻🇳 : Tiếng Việt\n🇩🇪 : Deutsch\n[Video Tutorial](https://streamable.com/u9ghp)") )}}
+{{addMessageReactions 670518064235937823 670533679206105099 "🇬🇧" "🇮🇳" "🇪🇸" "🇸🇦" "🇷🇺" "🇨🇵" "🇯🇵" "🇳🇱" "🇰🇷" "🇻🇳" "🇩🇪"}}
+{{end}}
+
+{{/*⭐STAR⭐*/}}
+{{if false}}
+{{$db := dbSet (toInt64 614850334644240384) "star" (add 100.0 (toFloat (dbGet (toInt64 614850334644240384) "star").Value))}}
+{{/*$db := dbSet (toInt64 471677056766312448) "stari" "0=0=0=0=0=0=0=0=0=0"*/}}
+{{$db := dbGet (toInt64 614850334644240384) "star"}}
+{{if $db}}
+{{toString $db.Value}}
+{{end}}
+{{end}}
+
+{{if false}}
+{{ $avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" (toString .User.ID) "/" .User.Avatar ".png") }}
+{{sendMessage nil (cembed "color" 16711782 "description" "Protect me" "author" (sdict "name" .User.String "url" "" "icon_url" $avatar) "fields" (cslice (sdict "name" "Link" "value" "diep.io/#16C6634300A4D4F3C0" "inline" true) (sdict "name" "Gamemode" "value" "4TDM" "inline" true) (sdict "name" "Server Location" "value" "Singapore" "inline" true)) "footer" (sdict "text" (joinStr "" "ID: " .User.ID)) "timestamp" currentTime)}}
+{{end}}
+{{/*CHECK PERMS*/}}
+{{/*dbDel (toInt64 0) "cooldown_song"*/}}
+{{$roles := ""}}{{range .Member.Roles}}{{$roles = joinStr  "" $roles " " .}}{{end}}
+{{$perms := "(529140551946338305|548256364611502090|529141575154925578)"}}
+{{if (reFind $perms $roles)}}
+{{/*sendMessage nil "Yes"*/}}
+{{else}}
+{{/*sendMessage nil "No"*/}}
+{{end}}

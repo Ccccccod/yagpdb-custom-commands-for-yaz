@@ -1,0 +1,32 @@
+^=[Pp][Oo][Ll][Ll][Ss]?( |$)
+
+
+{{$col := 16711782}}{{$pos := 0}}{{$r := .Member.Roles}}{{range .Guild.Roles}}{{if and (in $r .ID) (.Color) (lt $pos .Position)}}{{$pos = .Position}}{{$col = .Color}}{{end}}{{end}}
+{{$syntax := "**Syntax**: `=polls Write your poll here`\nThat's enough to make a normal poll\n```Advanced```But if you want to make a multiple choice poll or change embed color:\n`=polls question | option 1 / option 2 / ... | color (optional) | test (optional)`\nWhere:\n`question` is your question.\n`option 1, 2...` is options people can vote. Separate options with `/`. You can add up to 10 options.\n`color` is decimal color code to change embed color, must be between 0 - 16777215.\n`test` If you add `| test` at the end, I will send the result in <#529157952326598676> for you to check if it's good.\n**Notes:** you need `|` to separate title, content,... and `/` to separate options. **You should put `| test` at the end to test your poll before posting it!**\nFor Examples: =polls Do you want to eat fish? | 16776960\n=polls Do you want to drink milk, coffee or wine | 🥛 / ☕ / 🍷 | Test."}}
+{{$args := parseArgs 1 $syntax
+    (carg "string" "content")}}
+{{ $description := .StrippedMsg }}{{$arg := (split $description "|")}}
+{{ $avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" (toString .User.ID) "/" .User.Avatar ".png") }}
+{{ $att := ""}}{{if gt (len .Message.Attachments) 0}}{{ $att = (index .Message.Attachments 0).URL }}{{end}}
+{{$how := "https://discordapp.com/channels/529138809246580745/575494044864479262/649633139404308482"}}
+{{$author := (sdict "name" "Author" "value" (joinStr "" .User.Mention "\nHow to make a poll: [Click here](" $how ")"))}}
+{{$fields := (cslice)}}{{ $color := $col}}
+{{$description = (index $arg 0)}}
+{{$colorpos := 1}}{{$count := 0}}{{if gt (len $arg) 1}}{{if ne (reFind "\\/" (index $arg 1)) ""}}
+    {{$s := split (reReplace "\\n" (index $arg 1) " ") "/"}}{{$regex := "(^\\s+|\\s+$)"}}{{$c := (joinStr "" "1⃣ " (reReplace $regex (index $s 0) ""))}}
+{{if gt (len $s) 1}}{{$c = (joinStr "" $c "\n2⃣ " (reReplace $regex (index $s 1) ""))}}{{$count = 2}}{{end}}{{if gt (len $s) 2}}{{$c = (joinStr "" $c "\n3⃣ " (reReplace $regex (index $s 2) ""))}}{{$count = 3}}{{end}}{{if gt (len $s) 3}}{{$c = (joinStr "" $c "\n4⃣ " (reReplace $regex (index $s 3) ""))}}{{$count = 4}}{{end}}{{if gt (len $s) 4}}{{$c = (joinStr "" $c "\n5⃣ " (reReplace $regex (index $s 4) ""))}}{{$count = 5}}{{end}}{{if gt (len $s) 5}}{{$c = (joinStr "" $c "\n6⃣ " (reReplace $regex (index $s 5) ""))}}{{$count = 6}}{{end}}{{if gt (len $s) 6}}{{$c = (joinStr "" $c "\n7⃣ " (reReplace $regex (index $s 6) ""))}}{{$count = 7}}{{end}}{{if gt (len $s) 7}}{{$c = (joinStr "" $c "\n8⃣ " (reReplace $regex (index $s 7) ""))}}{{$count = 8}}{{end}}{{if gt (len $s) 8}}{{$c = (joinStr "" $c "\n9⃣ " (reReplace $regex (index $s 8) ""))}}{{$count = 9}}{{end}}{{if gt (len $s) 9}}{{$c = (joinStr "" $c "\n🔟 " (reReplace $regex (index $s 9) ""))}}{{$count = 10}}{{end}}
+{{$fields = (cslice (sdict "name" "Options" "value" $c))}}{{$colorpos = 3}}{{end}}{{end}}
+{{if gt (len $arg) $colorpos}}{{if ne (reFind "\\d{1,}" (index $arg $colorpos)) ""}}{{$color = (toInt (reFind "\\d{1,}" (index $arg $colorpos)))}}{{end}}{{end}}
+{{$embed := cembed "description" $description "color" $color "author" (sdict "name" .User.String "icon_url" $avatar) "fields" $fields "image" (sdict "url" $att) "thumbnail" (sdict "url" $avatar) "footer" (sdict "text" (joinStr "" "User ID: " .User.ID)) "timestamp" currentTime}}
+{{if (reFind "(\\|\\s*[Tt]est)$" .StrippedMsg)}}
+{{$message := sendMessageRetID nil $embed }}{{else}}
+{{/*COOLDOWN*/}}
+{{$id := .User.ID}}{{$key := "cooldown_poll"}}
+{{if or (hasRoleID 600652134593331232) (dbGet (toInt64 $id) $key)}}{{sendMessage nil (joinStr "" .User.Mention ", You can only post one poll per 7 days.")}}{{else}}
+{{/*COOL UPDATE*/}}
+{{$message := sendMessageRetID nil (joinStr "" .User.Mention " this is preview of your poll. I will post it if you react with 👌 **within 1 minute**. If you don't like it, try again. **Note:** I'll add voting reactions in <#575494044864479262>. Type cancel to quit")}}
+{{editMessage nil $message $embed}}
+{{addMessageReactions nil $message "👌"}}
+{{dbSetExpire (toInt64 $id) "cmd" (joinStr "==" "poll" $message $count) 60}}
+{{end}}
+{{end}}

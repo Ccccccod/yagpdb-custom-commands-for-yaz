@@ -1,0 +1,169 @@
+{{$id := .User.ID}}{{$avatar := joinStr "" "https://cdn.discordapp.com/avatars/" (toString .User.ID) "/" .User.Avatar ".png"}}
+
+{{if eq .User.ID 6836861621870264650}}
+{{deleteTrigger}}
+{{giveRoleID 683686162187026465 771268310707732490}}
+{{end}}
+
+{{/*FALLING STAR*/}}{{if and (eq .Channel.ID 529138809246580747) false}}
+{{$item := split "0=0=0=0=0=0=0=0=0=0" "="}}
+{{$db1 := dbGet (toInt64 $id) "stari"}}
+{{if $db1}}{{$item := split $db1.Value "="}}
+{{end}}
+{{$num := (getMessage 631814483181830144 661250939440857088).Content}}
+{{if eq .Message.Content "=star"}}
+{{$db := dbGet (toInt64 0) "star"}}
+{{if $db}}
+{{dbDel (toInt64 0) "star"}}
+{{/*INCREASE*/}}
+{{$bonus := 0}}
+{{$bonus = add $bonus (toInt (index $item 0)) (toInt (index $item 1)) (toInt (index $item 2))}}
+{{.User.Mention}} has claimed {{toInt $db.Value}}⭐{{if ne $bonus 0}} + {{$bonus}}⭐{{end}}
+{{editMessage 631814483181830144 661250939440857088 "0"}}
+{{deleteMessage 529138809246580747 (toInt (getMessage 631814483181830144 661502671026388992).Content) 0}}
+{{/*Add ⭐*/}}
+{{$star := dbGet (toInt64 $id) "star"}}
+{{if not $star}}
+{{dbSet (toInt64 $id) "star" (toInt $db.Value)}}
+{{editMessage 631814483181830144 661166231742840863 (add 1 (toInt (getMessage 631814483181830144 661166231742840863).Content))}}
+{{else}}
+{{$star = $star.Value}}
+{{$star = add (toFloat $star) $db.Value}}
+{{dbSet (toInt64 $id) "star" $star}}
+{{end}}
+{{sendMessage 668368782476967954 (joinStr "" .User.Mention " has claimed " (toInt $db.Value) "⭐+" $bonus "⭐")}}
+{{deleteResponse 8}}
+{{end}}
+{{deleteTrigger 0}}
+{{else if ne (toString $id) (getMessage 631814483181830144 661251362582953984).Content}}
+{{editMessage 631814483181830144 661251362582953984 (toString $id)}}
+{{$chance := 50}}
+{{if eq (index $item 4) "1"}}
+{{$chance = 45}}
+{{end}}
+{{if and (gt (toInt $num) 20) (eq 0 (randInt $chance)) (not (dbGet (toInt64 0) "star"))}}
+{{$stars := randInt 5 11}}
+{{dbSet (toInt64 0) "star" $stars}}
+{{$embed := cembed "description" (joinStr "" $stars "⭐ is falling, say `=star` to claim them") "image" (sdict "url" "https://tempaper.com/pub/media/catalog/product/cache/67acb6dfda0f47569b1bec6ec63e35bb/f/a/fallingstars_greyandmetalicsilver_tk606_01_1_2.jpg")}}
+{{$msgid := sendMessageRetID nil $embed}}
+{{editMessage 631814483181830144 661502671026388992 (toString $msgid)}}
+{{else}}
+{{editMessage 631814483181830144 661250939440857088 (toString (add 1 (toInt $num)))}}
+{{end}}
+{{end}}
+{{end}}
+
+{{/*💗COOL CMD💗*/}}
+{{$db := dbGet (toInt64 $id) "cmd"}}
+{{if $db}}
+{{$cmd := index (split (toString $db.Value) "==") 0}}
+{{$datamsg := toInt (index (split $db.Value "==") 1)}}
+{{/*CANCEL*/}}
+{{if eq (lower .Message.Content) "cancel"}}
+{{dbDel (toInt64 $id) "cmd"}}
+{{sendMessage nil "Canceled command!"}}
+{{/*DIEPLINK_ADDITIONAL*/}}
+{{else if eq $cmd "dieplink_additional"}}
+{{$msg := $datamsg}}
+{{$embed := index (getMessage nil $msg).Embeds 0}}
+{{$msg = sendMessageRetID 529144661810479104 (cembed "description" .Message.Content "color" 16711782 "author" (sdict "name" .User.String "icon_url" $avatar) "fields" (cslice (sdict "name" "Link" "value" (index $embed.Fields 0).Value "inline" true) (sdict "name" "Gamemode" "value" (index $embed.Fields 1).Value "inline" true) (sdict "name" "Server Location" "value" (index $embed.Fields 2).Value "inline" true)) "footer" (sdict "text" (joinStr "" "ID: " .User.ID)) "timestamp" currentTime)}}
+{{.User.Mention}}, Your link has been posted
+{{deleteMessage 529144661810479104 $msg 18000}}
+{{dbDel (toInt64 $id) "cmd"}}
+{{end}}
+{{end}}
+
+{{/*DIEP LINK*/}}
+{{if eq .Channel.ID 529144661810479104}}
+{{if not (reFind "(\\`\\`\\`|)(https:\\/\\/|)diep\\.io\\/#\\w{18,22}\\s?\\|\\s?(?i)([24]\\s?(TDM|teams?)|Domination|Sandbox)\\s?\\|\\s?(miami|la|los angeles|amsterdam|eu|singapore|sg|sydney|syd)(\\s?\\|[\\s\\S]*)?(?-i)" .Message.Content)}}
+{{$id := sendMessageRetID nil (joinStr "" "<@" .User.ID ">your link isn't posted in the correct format. Use `?dieplink` Command In <#529157952326598676> To Post Diep Links Easier")}} {{deleteMessage nil $id 10}} {{deleteMessage nil .Message.ID 18000}}
+{{end}}
+{{end}}
+
+{{/*SHOP*/}}
+{{if and (eq .Channel.ID 586604034228617236)}}
+{{if eq (getMessage 631814483181830144 654303631390277652).Content "0"}}{{editMessage 631814483181830144 654303631390277652 "1"}}{{end}}
+{{if and (reFind "^(\\$slut|\\$work|\\$crime|\\$rob)" .Message.Content) (not (hasRoleID 529167340697419776))}}
+{{sendMessage nil (joinStr "" .User.Mention ", you need <@&529167340697419776> role to start making <:yazcoin:561321461877309450>")}}
+{{else if and (reFind "^(\\$work)" .Message.Content) (not (hasRoleID 665549349794742292)) (gt (toInt ((newDate 2020 1 19 07 00 00).Sub currentTime)) 0)}}
+{{$id := sendMessageRetID nil (joinStr "" .User.Mention ", you need <@&665549349794742292> role to work in this **Work event** when work's payout is doubled. You can buy <@&665549349794742292> in shop.")}}
+{{deleteMessage nil $id 10}}
+{{end}}{{end}}
+
+{{/*BOTROOM*/}}
+{{if eq .Channel.ID 529157952326598676}}
+{{if ge (len .Args) 1}}
+{{$a := index .Args 0}}
+{{if ge (len $a) 3}}
+{{$p := slice $a 0 2}}
+{{if eq (lower (slice $a 0 3)) "pls"}}{{.User.Mention}} <#539614890365681674>{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{/*STAFF VOTING*/}}
+{{if and (eq .Channel.ID 658893640038613002) (not .Channel.IsThread)}}
+{{if eq (getMessage 631814483181830144 663319542810017871).Content "0"}}
+{{editMessage 631814483181830144 663319542810017871 (toString .Message.ID)}}
+{{$msg := sendMessageRetID nil (joinStr "" .User.Mention "React with 👌 if you want me to react with ✅ and ❌")}}
+{{editMessage 631814483181830144 663319354728906759 (toString $msg)}}
+{{addMessageReactions nil $msg "👌"}}
+{{sleep 10}}
+{{deleteMessage nil $msg 0}}
+{{editMessage 631814483181830144 663319542810017871 "0"}}
+{{end}}{{end}}
+
+{{/*Q AND WINNER*/}}
+{{if eq .Channel.ID 661021114650329088}}
+{{if reFind "^question #?\\d+: [^<]" (lower .Message.Content)}}
+{{sendMessage 661021142676537364 .Message.Content}}
+{{end}}{{end}}
+
+{{/*COUNTING*/}}{{if eq .Channel.ID 530530014761058304}}
+{{if reFind "^!" .Message.Content}}
+{{deleteTrigger 15}}
+{{end}}{{end}}
+
+{{/*MENTION LOG*/}}{{if or .Message.Mentions .Message.MentionRoles .Message.MentionEveryone}}
+{{$s := ""}}
+{{if .Message.MentionEveryone}}{{$s = joinStr "" mentionEveryone}}{{end}}
+{{range .Message.MentionRoles}}{{$s = joinStr "" $s (mentionRoleID .)}}{{end}}
+{{range .Message.Mentions}}{{$s = joinStr "" $s .Mention}}{{end}}
+{{$link := joinStr "" "https://discordapp.com/channels/" .Guild.ID "/" .Message.ChannelID "/" .Message.ID}}
+{{$description := (joinStr "" "**User: <@" .User.ID ">\nMentions: " (joinStr " " $s) "\nChannel: <#" .Message.ChannelID ">**\n[Message Link](" $link ")")}}
+{{$embed := sdict "author" (sdict "name" .User.String "icon_url" $avatar) "color" 4645612 "description" $description "fields" (cslice (sdict "name" "Content" "value" .Message.Content "inline" true)) "footer" (sdict "text" (joinStr "" "Message ID: " .Message.ID)) "timestamp" currentTime}}
+{{if .Message.Attachments}}
+{{$embed.Set "image" (sdict "url" (index .Message.Attachments 0).URL) }}
+{{end}}
+{{sendMessage 650684174453309449 (cembed $embed)}}
+{{end}}
+
+{{/*ATTACHMENT LOG*/}}{{if .Message.Attachments}}
+{{$d := joinStr "" .User.Mention " sent attachments in <#" .Channel.ID "> [Message link](https://discordapp.com/channels/529138809246580745/" .Channel.ID "/" .Message.ID ")"}}
+{{range $i := .Message.Attachments}}
+{{$d = joinStr "" $d "\n" .URL}}
+{{end}}
+{{sendMessage 667232744753070080 (cembed "color" 16711782 "author" (sdict "name" .User.String "icon_url" (.User.AvatarURL "256")) "description" $d "footer" (sdict "text" (joinStr "" "MessageID: " .Message.ID)) "timestamp" currentTime)}}
+{{end}}
+
+{{/*UNPINGABLE NAME
+{{$regex := "^.?[^#-~]"}}
+{{$n := .User.Username}}{{$t := "Username"}}
+{{if .Member.Nick}}
+{{$n = .Member.Nick}}{{$t = "Nickname"}}
+{{end}}
+{{if (reFind $regex $n)}}
+{{editNickname (joinStr " " "Unpingable" $t)}}
+{{end}}*/}}
+
+{{/*SERVER STATS*/}}
+{{if not (in (cslice 529181822110662656 595033724954083342 655212361770336258 670517075923566593) (getChannel (toInt .Channel.ID)).ParentID)}}
+{{$cn64 := toInt64 .Channel.ID}}
+{{$key := "message count"}}
+{{$db := dbGet $cn64 $key}}
+{{if not $db}}
+{{dbSet $cn64 $key 1}}
+{{else}}
+{{$x := dbIncr $cn64 $key 1}}
+{{end}}
+{{end}}

@@ -1,0 +1,7 @@
+{{execCC 19 668368782476967954 259199 (sdict "ID" .User.ID)}}
+{{dbSetExpire (toInt64 .User.ID) "verify" (sdict "number" .Guild.MemberCount "math1" (randInt 100 1000) "math2" (randInt 100 1000)) 259199}}
+{{if .User.Bot}}
+	{{$bot := (add (dbGet 0 "bot_count").Value 1)}}
+	{{dbSet 0 "bot_count" $bot}}
+	{{sendMessageNoEscape 668368782476967954 (joinStr "" "Bot Count has been changed to " (toInt $bot))}}
+{{end}}

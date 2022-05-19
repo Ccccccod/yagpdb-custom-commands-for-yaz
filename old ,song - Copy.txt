@@ -1,0 +1,30 @@
+^([,=.][Ss]ong)
+
+{{$song := 632775463797915648}}
+ 
+{{if .ExecData}}
+{{editMessage 631814483181830144 666653592710545428 (toString (sendMessageRetID $song "It's time to post a new song!"))}}
+{{else}}
+{{/*COOLDOWN*/}}
+{{$id := 0}}{{$key := "cooldown_song"}}
+{{if (dbGet (toInt64 $id) $key)}}
+{{else}}
+{{/*COMMAND*/}}
+{{if lt (len .Args) 2}}{{sendMessage nil "Syntax is `,song [song link]`"}}{{/*else*/}}{{/*$link := index .Args 1*/}}
+{{else if not (reFind "http(?:s?):\\/\\/(?:www\\.)?youtu(?:be\\.com\\/watch\\?v=|\\.be\\/)([\\w\\-\\_]*)(&(amp;)?‌​[\\w\\?‌​=]*)?" .StrippedMsg)}}
+{{sendMessage nil (joinStr "" .User.Mention " Please post a youtube link")}}
+{{dbSetExpire (toInt64 $id) $key "cooldown" 5}}
+{{else if eq (getMessage 631814483181830144 658559913349349386).Content (toString .User.ID)}}{{sendMessage nil (joinStr "" .User.Mention " You can't post 2 songs in a row!")}}{{dbSetExpire (toInt64 $id) $key "cooldown" 5}}
+{{else if hasRoleID 636534027377180672}}{{else}}
+{{$t := (toDuration (currentTime.Sub (newDate 2000 1 1 15 0 0)))}}
+{{$d := mod $t 86400000000000}}
+{{$d := toDuration (add 86400000000000 (mult $d -1)) }}
+{{$d := div $d 1000000000}}
+{{dbSetExpire (toInt64 $id) $key "cooldown" $d}}
+{{$post := sendMessageRetID $song (joinStr "" .User.Mention " posted a song:" .StrippedMsg)}}
+{{deleteMessage $song (toInt (getMessage 631814483181830144 666653592710545428).Content) 0}}
+{{execCC 10 $song $d (sdict "time" $d)}}
+{{addMessageReactions $song $post "👍" "👎"}}
+{{editMessage 631814483181830144 658559913349349386 .User.ID}}
+{{sendMessage 530912139481972757 (joinStr "" "<#" $song "> has been locked for " (humanizeDurationSeconds (toDuration (mult $d 1000000000))))}}
+{{end}}{{end}}{{end}}

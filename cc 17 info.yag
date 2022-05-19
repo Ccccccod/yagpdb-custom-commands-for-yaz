@@ -1,0 +1,178 @@
+{{/*Variables*/}}
+{{$o := parseArgs 1 "" (carg "string" "avatar | user | channel | server")}}
+{{$prefix := `=`}}
+{{$ccName := "info"}}
+{{$command := lower (index .Args 1)}}
+
+
+{{if eq "server" $command}}
+	{{$icon := ""}}
+	{{$name := printf "%s (%d)" .Guild.Name .Guild.ID}}
+	{{if .Guild.Icon}}
+		{{$ext := "webp"}}
+		{{if eq (slice .Guild.Icon 0 2) "a_"}} {{$ext = "gif"}} {{end}}
+		{{$icon = printf "https://cdn.discordapp.com/icons/%d/%s.%s" .Guild.ID .Guild.Icon $ext}}
+	{{end}}
+	
+	{{$owner := userArg .Guild.OwnerID}}
+	{{$levels := cslice
+		"None: Unrestricted"
+		"Low: Must have a verified email on their Discord account."
+		"Medium: Must also be registered on Discord for longer than 5 minutes."
+		"(╯°□°）╯︵ ┻━┻: Must also be a member of this server for longer than 10 minutes."
+		"┻━┻ ﾐヽ(ಠ益ಠ)ノ彡┻━┻: Must have a verified phone on their Discord account."
+	}}
+	{{$afk := "n/a"}}
+	{{if .Guild.AfkChannelID}}
+		{{$afk = printf "**Channel:** <#%d> (%d)\n**Timeout:** %s"
+			.Guild.AfkChannelID
+			.Guild.AfkChannelID
+			(humanizeDurationSeconds (toDuration (mult .Guild.AfkTimeout .TimeSecond)))
+		}}
+	{{end}}
+	{{$embedsEnabled := "No"}}
+	{{if .Guild.EmbedEnabled}} {{$embedsEnabled = "Yes"}} {{end}}
+	{{$createdAt := div .Guild.ID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add}}
+	
+	{{$infoEmbed := cembed
+		"author" (sdict "name" $name "icon_url" $icon)
+		"color" 14232643
+		"thumbnail" (sdict "url" $icon)
+		"fields" (cslice
+			(sdict "name" "❯ Verification Level" "value" (index $levels .Guild.VerificationLevel))
+			(sdict "name" "❯ Region" "value" .Guild.Region)
+			(sdict "name" "❯ Members" "value" (printf "**• Total:** %d Members\n**• Online:** %d Members" .Guild.MemberCount onlineCount))
+			(sdict "name" "❯ Roles" "value" (printf "**• Total:** %d\nUse `-listroles` to list all roles." (len .Guild.Roles)))
+			(sdict "name" "❯ Owner" "value" (printf "%s (%d)" $owner.String $owner.ID))
+			(sdict "name" "❯ AFK" "value" $afk)
+			(sdict "name" "❯ Embeds Enabled" "value" $embedsEnabled)
+		)
+		"footer" (sdict "text" "Created at")
+		"timestamp" $createdAt
+	}}
+	
+	{{if .CmdArgs}}
+		{{if eq (index .CmdArgs 0) "icon"}}
+			{{sendMessage nil (cembed
+				"author" (sdict "name" $name "icon_url" $icon)
+				"title" "❯ Server Icon"
+				"color" 14232643
+				"image" (sdict "url" $icon)
+			)}}
+		{{else}}
+			{{sendMessage nil $infoEmbed}}
+		{{end}}
+	{{else}}
+		{{sendMessage nil $infoEmbed}}
+	{{end}}
+
+
+{{else if eq "channel" $command}}
+	{{$channel := .Channel}}
+	{{$args := parseArgs 1 (print "Syntax: " $prefix $ccName " channel [channel]") (carg "string" "channel") (carg "channel" "channel")}}
+	{{if $args.IsSet 1}}
+		{{$channel = $args.Get 1}}
+	{{end}}
+
+	{{$types := cslice "Text" "DM" "Voice" "Group DM" "Category" "News" "Store"}}
+	{{$nsfw := "No"}}
+	{{$parent := "*None set*"}}
+	{{if $channel.NSFW}} {{$nsfw = "Yes"}} {{end}}
+	{{with $channel.ParentID}} {{$parent = printf "<#%d>" .}} {{end}}
+	{{$createdAt := div $channel.ID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add}}
+	{{sendMessage nil (cembed
+		"title" (printf "❯ Info for #%s" $channel.Name)
+		"fields" (cslice
+			(sdict "name" "❯ ID" "value" (str $channel.ID) "inline" true)
+			(sdict "name" "❯ Topic" "value" (or $channel.Topic "*None set*") "inline" true)
+			(sdict "name" "❯ Parent Channel" "value" $parent "inline" true)
+			(sdict "name" "❯ NSFW" "value" $nsfw "inline" true)
+			(sdict "name" "❯ Position" "value" (str (add $channel.Position 1)) "inline" true)
+			(sdict "name" "❯ Type" "value" (index $types $channel.Type) "inline" true)
+		)
+		"color" 14232643
+		"footer" (sdict "text" "Created at")
+		"timestamp" $createdAt
+	)}}
+
+
+{{else if eq "customroles" $command}}
+	{{$customRoles := "548254987990597634"}}
+	{{$tempRoles := "602871042242904097"}}
+	{{$colorRoles := "737882700953682012"}}
+	{{$roles := sdict}}
+	{{range .Guild.Roles}}
+		{{$roles.Set (toString .ID) .}}
+	{{end}}
+	{{$s := ""}}
+	{{$s1 := ""}}
+	{{range .Guild.Roles}}
+		{{- if and (lt .Position ($roles.Get $customRoles).Position) (gt .Position ($roles.Get $tempRoles).Position)}}
+			{{- $s = print $s "\n<@&" .ID "> " .ID}}
+		{{- end}}
+		{{- if and (lt .Position ($roles.Get $tempRoles).Position) (gt .Position ($roles.Get $colorRoles).Position)}}
+			{{- $s1 = print $s1 "\n<@&" .ID "> " .ID}}
+		{{- end}}
+	{{- end}}
+	{{sendMessage nil (cembebd
+		"fields" (cslice
+			(sdict "name" "Permanent Custom Roles:" "value" $s)
+			(sdict "name" "Temporary Custom Roles:" "value" $s1)
+		)
+	)}}
+
+
+{{else if eq "user" $command}}
+	{{$member := .Member}}
+	{{$user := .User}}
+	{{$args := parseArgs 1 (print "Syntax: `" $prefix $ccName " [user]`") (carg "string" "user") (carg "member" "target")}}
+	{{if $args.IsSet 1}}
+		{{$member = $args.Get 1}}
+		{{$user = $member.User}}
+	{{end}}
+	{{$col := 14232643}}{{$pos := 0}}{{$r := $member.Roles}}{{range .Guild.Roles}}{{if and (in $r .ID) (.Color) (lt $pos .Position)}}{{$pos = .Position}}{{$col = .Color}}{{end}}{{end}}
+	
+	{{$roles := ""}}
+	{{range $k, $v := $member.Roles}}
+		{{- if eq $k 0}} {{- $roles = printf "<@&%d>" .}}
+		{{- else}} {{- $roles = printf "%s<@&%d>" $roles .}} {{- end -}}
+	{{end}}
+	{{if gt (len $roles) 1024}}
+		{{$roles = "Too many to list"}}
+	{{end}}
+	{{$bot := "No"}}
+	{{if $user.Bot}} {{$bot = "Yes"}} {{end}}
+	{{$createdAt := div $user.ID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add}}
+	
+	{{sendMessage nil (cembed
+		"author" (sdict "name" (printf "%s (%d)" $user.String $user.ID) "icon_url" ($user.AvatarURL "256"))
+		"fields" (cslice
+			(sdict "name" "❯ Nickname" "value" (or $member.Nick "*None set*"))
+			(sdict "name" "❯ Joined At" "value" ($member.JoinedAt.Parse.Format "Jan 02, 2006 3:04 AM"))
+			(sdict "name" "❯ Created At" "value" ($createdAt.Format "Monday, January 2, 2006 at 3:04 AM"))
+			(sdict "name" (printf "❯ Roles (%d Total)" (len $member.Roles)) "value" (or $roles "n/a"))
+			(sdict "name" "❯ Bot" "value" $bot)
+		)
+		"color" $col
+		"thumbnail" (sdict "url" ($user.AvatarURL "256"))
+	)}}
+
+{{else if eq "avatar" $command}}
+	{{$user := .User}}
+	{{$args := parseArgs 1 (print "Syntax: `" $prefix $ccName " avatar [user]`") (carg "string" "avatar") (carg "userid" "user")}}
+	{{if $args.IsSet 1}}
+		{{$user = userArg ($args.Get 1)}}
+	{{end}}
+	{{sendMessage nil (cembed
+		"author" (sdict "name" (printf "%s (%d)" $user.String $user.ID) "icon_url" ($user.AvatarURL "256"))
+		"title" "❯ Avatar"
+		"image" (sdict "url" ($user.AvatarURL "2048"))
+		"color" 14232643
+	)}}
+
+
+{{else if eq "bot" $command}}
+	{{exec "info"}}
+
+
+{{end}}

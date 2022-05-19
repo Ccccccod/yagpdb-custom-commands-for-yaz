@@ -1,0 +1,184 @@
+{{$args := parseArgs 1 "" (carg "string" "say | edit | react | poll | resetsong | get | setbotcount")}}
+{{$cmd := lower (index .Args 1)}}
+ 
+{{/*SAY*/}}
+{{if (in (cslice "say") $cmd)}}
+{{$change := false}}
+{{if lt (len .Args) 3}}Syntax is `=say [channel] <text>`
+{{else if gt (len .Args) 2}}
+{{if (getChannel (reFind "\\d{18}" (index .Args 2)))}}{{$change = true}}
+{{end}}
+{{if $change}}
+{{$args = parseArgs 3 "" (carg "string" $cmd) (carg "channel" "channel to send to") (carg "string" "text to send")}}
+{{sendMessageNoEscape ($args.Get 1).ID ($args.Get 2)}}
+{{else}}
+{{$args = parseArgs 2 "" (carg "string" $cmd) (carg "string" "text to send")}}
+{{sendMessageNoEscape nil ($args.Get 1)}}
+{{end}}
+{{end}}
+ 
+{{/*EDIT*/}}
+{{else if (eq $cmd "edit")}}
+{{$args = parseArgs 3 "" (carg "string" $cmd) (carg "channel" "channel") (carg "int" "messageID") (carg "string" "text")}}
+{{editMessageNoEscape ($args.Get 1).ID ($args.Get 2) ($args.Get 3)}}
+ 
+{{/*REACT*/}}
+{{else if (eq $cmd "react")}}
+{{$args = parseArgs 4 "" (carg "string" $cmd) (carg "channel" "channel") (carg "string" "messageID") (carg "string" "emojis")}}
+{{addMessageReactions ($args.Get 1).ID ($args.Get 2) (split (reReplace "<:|>" ($args.Get 3) "") " ")}}
+
+{{/*SET POLL*/}}
+{{else if or (eq $cmd "setpoll")}}
+{{$args = parseArgs 2 "" (carg "string" $cmd) (carg "member" "Member") (carg "duration" "cooldown")}}
+{{$user := ($args.Get 1).User}}
+{{$id := $user.ID}}
+{{$key := "cooldown_poll"}}
+{{$cd := toDuration 0}}
+{{if $args.IsSet 2}}
+	{{$cd = $args.Get 2}}
+	{{dbSet (toInt64 $id) $key $cd}}
+{{else}}
+	{{dbDel (toInt64 $id) $key}}
+{{end}}
+{{sendMessage nil (joinStr "" .User.Mention " set " $user.Mention "'s poll cooldown to " (humanizeDurationSeconds $cd))}}
+
+{{/*POLL*/}}
+{{else if or (eq $cmd "poll")}}
+{{$args = parseArgs 2 "" (carg "string" $cmd) (carg "string" "get | set | add | sub | list")}}
+{{$cmd1 := lower (index .CmdArgs 1)}}
+{{$key := "cooldown_poll"}}
+{{if eq $cmd1 "get"}}
+	{{$args = parseArgs 2 "" (carg "string" $cmd) (carg "string" $cmd1) (carg "member" "Member")}}
+	{{$id := .User.ID}}
+	{{if $args.IsSet 2}}
+		{{$id = ($args.Get 2).User.ID}}
+	{{end}}
+	{{with dbGet (toInt64 $id) $key}}
+		{{$format := "Mon, 02 Jan 2006 15:04:05 -0700"}}
+		{{sendMessage nil (joinStr "" "Member's ID: " .UserID "\nRemaining Cooldown: " (humanizeDurationSeconds (.ExpiresAt.Sub currentTime)) "\nCreated At: " (.CreatedAt.Format $format) "\nLast Updated: " (.UpdatedAt.Format $format) "\nExpires At: " (.ExpiresAt.Format $format))}}
+	{{else}}
+		{{sendMessage nil (joinStr "" .User.Mention "No cooldown")}}
+	{{end}}
+{{else if in (cslice "set" "add" "sub") $cmd1}}
+	{{$args = parseArgs 4 "" (carg "string" $cmd) (carg "string" $cmd1) (carg "member" "Member") (carg "duration" "cooldown")}}
+	{{$user := ($args.Get 2).User}}
+	{{$id := $user.ID}}
+	{{$et := currentTime}}
+	{{$db := dbGet (toInt64 $id) $key}}
+	{{if $db}}
+		{{$et = $db.ExpiresAt}}
+	{{else}}
+		{{$et = currentTime}}
+	{{end}}
+	{{if eq $cmd1 "add"}}
+		{{$et = $et.Add ($args.Get 3)}}
+	{{else if eq $cmd1 "sub"}}
+		{{$et = $et.Add (toDuration (mult -1 ($args.Get 3)))}}
+	{{else}}
+		{{$et = currentTime.Add ($args.Get 3)}}
+	{{end}}
+	{{$cd := $et.Sub currentTime}}
+	{{if le $cd .TimeSecond}}
+		{{$cd = .TimeSecond}}
+	{{end}}
+	{{dbSetExpire (toInt64 $id) $key "cooldown" (div $cd 1000000000)}}
+	{{sendMessage nil (joinStr "" .User.Mention " set " $user.Mention "'s poll cooldown to " (humanizeDurationSeconds $cd))}}
+{{else if eq $cmd1 "list"}}
+	{{$args = parseArgs 2 "" (carg "string" $cmd) (carg "string" $cmd1) (carg "int" "page" 1)}}
+	{{$pageSize := 10}}
+	{{$page := 1}}
+	{{if $args.IsSet 2}}
+		{{$page = $args.Get 2}}
+	{{end}}
+	{{$db := dbTopEntries $key 10 (mult (sub $page 1) 10)}}
+	{{if $db}}
+		{{$s := ""}}
+		{{range $i, $db := $db}}
+			{{$s = joinStr "" $s "\n" "<@" .UserID "> " (humanizeDurationSeconds (.ExpiresAt.Sub currentTime))}}
+		{{end}}
+		{{sendMessage nil (cembed "title" "Poll Cooldown" "description" $s)}}
+	{{end}}
+{{end}}
+ 
+{{/*RESET SONG*/}}
+{{else if eq $cmd "resetsong"}}
+{{$args = parseArgs 2 "" (carg "string" "resetsong") (carg "member" "Last song's author")}}
+{{$oldAuthor := dbGet 0 "song_last"}}
+{{if $oldAuthor}}
+{{$oldAuthor = toInt $oldAuthor.Value}}
+{{else}}
+{{$oldAuthor = "no one"}}
+{{end}}
+{{$output := joinStr "" "<#632775463797915648> has been reset by " .User.Mention ". Last song's author: <@" $oldAuthor ">"}}
+{{if $args.IsSet 1}}
+{{$newAuthor := ($args.Get 1).User.Mention}}
+{{$output = joinStr "" $output "\nLast song's author was changed from <@" $oldAuthor "> to " $newAuthor}}
+{{dbSetExpire 0 "song_last" (toString ($args.Get 1).User.ID) 604800}}
+{{end}}
+{{dbDel 0 "cooldown_song"}}
+{{sendMessage nil (cembed "description" $output)}}
+
+{{/*GET MESSAGE*/}}
+{{else if in (cslice "get" "getmsg" "msg" "getmessage") $cmd}}
+{{$args = parseArgs 3 "Syntax is `=admin getmessage <channel> <messageID>`" (carg "string" "getmessage") (carg "channel" "Channel") (carg "int" "MessageID")}}
+{{$msg := getMessage ($args.Get 1).ID ($args.Get 2)}}
+{{with $msg}}
+	{{$description := printf "Type: %d\nPinned: %t\nMention Everyone: %t\n[message link](https://discord.com/channels/%d/%d/%d)" .Type .Pinned .MentionEveryone .GuildID .ChannelID .ID}}
+	{{$fields := cslice}}
+	{{if .Author}}
+		{{$fields = $fields.Append (sdict "name" "Author" "value" (print .Author.Mention " ID: " .Author.ID))}}
+	{{end}}
+	{{if .Mentions}}
+		{{$mentions := ""}}
+		{{range .Mentions}}
+			{{- $mentions = print $mentions "<@" .ID ">"}}
+		{{- end}}
+		{{$fields = $fields.Append (sdict "name" "Mentioned Users" "value" $mentions)}}
+	{{end}}
+	{{if .MentionRoles}}
+		{{$mentions := ""}}
+		{{range .MentionRoles}}
+			{{- $mentions = print $mentions "<@" .ID ">"}}
+		{{- end}}
+		{{$fields = $fields.Append (sdict "name" "Mentioned Roles" "value" $mentions)}}
+	{{end}}
+	{{if .Reactions}}
+		{{$reactions := ""}}
+		{{range .Reactions}}
+			{{- $a := ""}}
+			{{- if .Emoji.Animated}}
+				{{- $a = "a"}}
+			{{- end}}
+			{{- $emoji := printf "<%s:%s:%d>" $a .Emoji.Name .Emoji.ID}}
+			{{- if eq .Emoji.ID 0}}
+				{{- $emoji = .Emoji.Name}}
+			{{- end}}
+			{{- $reactions = printf "%s\n%s, Count: %d, ID: %d, Name: %s, Animated: %t" $reactions $emoji .Count .Emoji.ID .Emoji.Name .Emoji.Animated}}
+		{{- end}}
+		{{$fields = $fields.Append (sdict "name" "Reactions" "value" $reactions)}}
+	{{end}}
+	{{if .Attachments}}
+		{{$attachments := ""}}
+		{{range .Attachments}}
+			{{- $attachments = print $attachments "\n" .URL}}
+		{{- end}}
+		{{$fields = $fields.Append (sdict "name" "Attachments" "value" $attachments "inline" true)}}
+	{{end}}
+	{{$embed := sdict
+		"color" 0x00ffff
+		"description" $description
+		"fields" $fields
+		"timestamp" .Timestamp
+	}}
+	{{sendDM (complexMessage "file" .Content "embed" (cembed $embed))}}
+{{else}}{{.User.Mention}}Unknown message
+{{end}}
+
+{{else if in (cslice "setbotcount" "botcount") $cmd}}
+{{$args = parseArgs 2 "" (carg "string" "botcount") (carg "int" "Number of bots" 0 (sub .Guild.MemberCount 1))}}
+{{$old := toInt (dbGet 0 "bot_count").Value}}
+{{dbSet 0 "bot_count" ($args.Get 1)}}
+Bot count has been changed from {{$old}} to {{$args.Get 1}} by {{.User.Mention}}. Statistics will be updated in 5 minutes or less.
+
+{{else if false}}
+{{end}}

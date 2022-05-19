@@ -1,0 +1,134 @@
+{{if .ExecData}}
+{{$song := 632775463797915648}}
+{{dbSetExpire (toInt64 0) "song_new day" (toString (sendMessageRetID $song "It's time to post a new song!")) 604800}}
+{{else}}
+
+{{/*VARIABLES*/}}
+{{$col := 16711782}}{{$pos := 0}}{{$r := .Member.Roles}}{{range .Guild.Roles}}{{if and (in $r .ID) (.Color) (lt $pos .Position)}}{{$pos = .Position}}{{$col = .Color}}{{end}}{{end}}
+{{$avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" (toString .User.ID) "/" .User.Avatar ".png")}}
+
+{{$o := parseArgs 1 "" (carg "string" "song | quote")}}
+{{$command := lower (index .Args 1)}}
+
+{{/*SONG*/}}
+{{if eq $command "song"}}
+{{$song := 632775463797915648}}
+{{$songMuted := 636534027377180672}}
+{{/*COOLDOWN*/}}
+{{$id := 0}}{{$key := "cooldown_song"}}
+{{if (dbGet (toInt64 $id) $key)}}
+{{/*WAIT COOLDOWN*/}}
+{{.User.Mention}} Someone has already posted a song today!
+{{else}}
+{{/*COMMAND*/}}
+{{$args := parseArgs 2 "" (carg "string" "song") (carg "string" "youtube link")}}
+{{if not (reFind "http(?:s?):\\/\\/(?:www\\.)?youtu(?:be\\.com\\/watch\\?v=|\\.be\\/)([\\w\\-\\_]*)(&(amp;)?‌​[\\w\\?‌​=]*)?" ($args.Get 1))}}
+{{.User.Mention}} Please post an youtube link!
+{{else if eq (toInt64 (dbGet (toInt64 0) "song_last").Value) .User.ID}}
+{{.User.Mention}} You can't post 2 songs in a row!
+{{else if hasRoleID $songMuted}}
+{{.User.Mention}} You are muted in <#{{$song}}>
+{{else}}
+{{$t := (toDuration (currentTime.Sub (newDate 2000 1 1 15 0 0)))}}
+{{$d := mod $t 86400000000000}}
+{{$d := toDuration (add 86400000000000 (mult $d -1)) }}
+{{$d := div $d 1000000000}}
+{{dbSetExpire (toInt64 $id) $key "cooldown" $d}}
+{{$post := sendMessageRetID $song (joinStr "" .User.Mention " posted a song:" ($args.Get 1))}}
+{{deleteMessage $song (toInt (dbGet (toInt64 $id) "song_new day").Value)}}
+{{execCC .CCID $song $d (sdict "time" $d)}}
+{{addMessageReactions $song $post "👍" "👎"}}
+{{dbSetExpire (toInt64 $id) "song_last" (toString .User.ID) 604800}}
+{{sendMessage 530912139481972757 (joinStr "" "<#" $song "> has been locked for " (humanizeDurationSeconds (toDuration (mult $d 1000000000))))}}
+{{end}}{{end}}
+
+{{/*QUOTE*/}}
+{{else if eq $command "quote"}}
+{{$quote := 791356308472201237}}
+{{$quoteMuted := 802214670508884048}}
+{{/*COOLDOWN*/}}
+{{$id := 0}}{{$key := "cooldown_quote"}}
+{{if (dbGet (toInt64 $id) $key)}}
+{{/*WAIT COOLDOWN*/}}
+{{.User.Mention}} Someone has already posted a quote today!
+{{else}}
+{{/*COMMAND*/}}
+{{$args := parseArgs 2 "" (carg "string" "quote") (carg "string" "quote")}}
+{{if eq (toInt64 (dbGet (toInt64 0) "quote_last").Value) .User.ID}}
+{{.User.Mention}} You can't post 2 quotes in a row!
+{{else}}
+{{$t := (toDuration (currentTime.Sub (newDate 2000 1 1 15 0 0)))}}
+{{$d := mod $t 86400000000000}}
+{{$d := toDuration (add 86400000000000 (mult $d -1)) }}
+{{$d := div $d 1000000000}}
+{{dbSetExpire (toInt64 $id) $key "cooldown" $d}}
+{{$embed := cembed 
+  "description" ($args.Get 1)
+  "color" $col
+  "author" (sdict "name" .User.String "icon_url" $avatar) 
+  "thumbnail" (sdict "url" $avatar) 
+  "footer" (sdict "text" (joinStr "" "User ID: " .User.ID) "icon_url" $avatar) 
+  "timestamp" currentTime
+}}
+{{$post := sendMessageRetID $quote $embed}}
+{{addMessageReactions $quote $post "👍" "👎"}}
+{{dbSetExpire (toInt64 $id) "quote_last" (toString .User.ID) 604800}}
+{{sendMessage 530912139481972757 (joinStr "" "<#" $quote "> has been locked for " (humanizeDurationSeconds (toDuration (mult $d 1000000000))))}}
+{{end}}{{end}}
+
+{{else if in (cslice "poll" "polls") $command}}
+{{$syntax := "**Syntax**: `=activity poll Write your poll here`\nThat's enough to make a normal poll\n```Advanced```But if you want to make a multiple choice poll or change embed color:\n`=activity poll question | option 1 / option 2 / ... | color (optional) | test (optional)`\nWhere:\n`question` is your question.\n`option 1, 2...` is options people can vote. Separate options with `/`. You can add up to 10 options.\n`color` is decimal color code to change embed color, must be between 0 - 16777215.\n`test` If you add `| test` at the end, I will send the result in <#529157952326598676> for you to check if it's good.\n**Notes:** you need `|` to separate title, content,... and `/` to separate options. **You should put `| test` at the end to test your poll before posting it!**\nFor Examples: =polls Do you want to eat fish? | 16776960\n=polls Do you want to drink milk, coffee or wine | 🥛 / ☕ / 🍷 | Test."}}
+{{$args := parseArgs 2 $syntax (carg "string" "poll") (carg "string" "content")}}
+{{$polls := 575494044864479262}}
+{{$description := $args.Get 1}}{{$args = (split $description "|")}}
+{{$avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" (toString .User.ID) "/" .User.Avatar ".png")}}
+{{$att := ""}}{{if gt (len .Message.Attachments) 0}}{{$att = (index .Message.Attachments 0).URL}}{{end}}
+{{$how := "https://discordapp.com/channels/529138809246580745/575494044864479262/649633139404308482"}}
+{{$author := (sdict "name" "Author" "value" (joinStr "" .User.Mention "\nHow to make a poll: [Click here](" $how ")"))}}
+{{$fields := cslice}}
+{{$description = reReplace "\\n{2,}| +" (index $args 0) " "}}
+{{$emojis := cslice}}
+{{range (getMessage 631814483181830144 657309180717170708).Reactions}}
+	{{$emojis = $emojis.Append .Emoji.Name}}
+{{end}}
+{{$emojis = $emojis.AppendSlice (cslice "eleven:808022168624693269" "twelve:808022180910202933" "thirteen:808022193816338432" "fourteen:808022206466621441" "fifteen:808022220240453652" "sixteen:808022234802552912" "seventeen:808022246580944948" "eighteen:808022258794364969" "nineteen:808022272820248626" "twenty:808022284798263336")}}
+{{$count := 20}}
+{{$mult := false}}
+{{if gt (len $args) 1}}{{if ne (reFind "\\/" (index $args 1)) ""}}
+	{{$mult = true}}
+	{{$s := split (reReplace "\\n+" (index $args 1) " ") "/"}}
+	{{if gt $count (len $s)}}
+		{{$count = len $s}}
+	{{end}}
+	{{$c := ""}}
+	{{range $i := seq 0 $count}}
+		{{$emoji := index $emojis $i}}
+		{{if gt $i 9}}
+			{{$emoji = joinStr "" "<:" $emoji ">"}}
+		{{end}}
+		{{$c = joinStr "" $c "\n" $emoji (index $s $i)}}
+	{{end}}
+	{{$c := reReplace " +" $c " "}}
+	{{$fields = (cslice (sdict "name" "Options" "value" $c))}}
+{{end}}{{end}}
+{{$embed := cembed "description" $description "color" $col "author" (sdict "name" .User.String "icon_url" $avatar) "fields" $fields "image" (sdict "url" $att) "thumbnail" (sdict "url" $avatar) "footer" (sdict "text" (joinStr "" "User ID: " .User.ID)) "timestamp" currentTime}}
+{{/*Check*/}}
+{{if hasRoleID 600652134593331232}}
+	{{/*You're muted*/}}
+{{else if dbGet (toInt64 .User.ID) "cooldown_poll"}}
+	You can only post 1 poll per 7 days
+{{else}}
+	{{$poll := sendMessageRetID $polls $embed}}
+	{{dbSetExpire (toInt64 .User.ID) "cooldown_poll" "cooldown" 604800}}
+	{{if $mult}}
+		{{range $i := seq 0 $count}}
+			{{addMessageReactions $polls $poll (index $emojis $i)}}
+		{{end}}
+	{{else}}
+		{{addMessageReactions $polls $poll "✅" "❌"}}
+	{{end}}
+{{end}}
+
+{{else if false}}
+ 
+{{end}}{{end}}

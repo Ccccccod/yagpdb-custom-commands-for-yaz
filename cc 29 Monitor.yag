@@ -1,0 +1,53 @@
+{{/*VARIABLES*/}}
+{{$col := 16711782}}{{$pos := 0}}{{$r := .Member.Roles}}{{range .Guild.Roles}}{{if and (in $r .ID) (.Color) (lt $pos .Position)}}{{$pos = .Position}}{{$col = .Color}}{{end}}{{end}}
+{{$avatar := .User.AvatarURL "4096"}}
+
+{{$o := parseArgs 1 "" (carg "string" "starboard")}}
+{{$command := lower (index .Args 1)}}
+
+
+{{/*Variables*/}}
+{{$now := currentTime}}
+{{$log := false}}
+{{$logChannel := 668368782476967954}}
+
+
+{{if in (cslice "starboard" "sb") $command}}
+{{$starboard := 712247669568831508}}
+{{$args := parseArgs 1 "" (carg "string" "starboard | sb") (carg "int" "messageID")}}
+{{$message := getMessage $starboard ($args.Get 1)}}
+{{if $message}}
+	{{$reacted := false}}
+	{{range $message.Reactions}}
+		{{if eq .Emoji.Name "⭐"}}
+			{{$reacted = true}}
+		{{end}}
+	{{end}}
+	{{if $reacted}}
+		{{.User.Mention}} This message is already reacted with ⭐
+	{{else}}
+		{{addMessageReactions $starboard ($args.Get 1) "⭐"}}
+		{{addReactions "✅"}}
+		{{$duration := humanizeDurationSeconds ($now.Sub $message.Timestamp.Parse)}}
+		{{$log = sdict
+			"author" (sdict "name" .User.String "icon_url" $avatar)
+			"color" 0x00ff00
+			"thumbnail" (sdict "url" $avatar)
+			"title" "monitor starboard command"
+			"description" (printf "%s reacted with ⭐ to [a message](https://discord.com/channels/%d/%d/%d)\n**%s** after the message was sent" .User.Mention .Guild.ID $starboard ($args.Get 1) $duration)
+			"footer" (sdict "text" (print "ID: " .User.ID) "icon_url" $avatar)
+			"timestamp" $now
+		}}
+	{{end}}
+{{else}}
+	{{.User.Mention}} Unknown message. If you don't know how to copy message's id, say `,id message`
+{{end}}
+
+
+{{else if false}}
+{{end}}
+
+
+{{if $log}}
+	{{sendMessage $logChannel (cembed $log)}}
+{{end}}

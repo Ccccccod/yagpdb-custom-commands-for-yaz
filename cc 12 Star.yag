@@ -1,0 +1,95 @@
+{{/*Lottery⭐*/}}
+{{if .ExecData}}
+{{$d := .ExecData}}
+{{$id := $d.User.ID}}{{$id64 := toInt64 $id}}
+
+{{/*USE TICKET*/}}
+{{if in (cslice "useticket" "ticketuse") $d.c}}
+{{if (hasRoleID 656355386177355776)}}
+{{$star := dbGet $id64 "star"}}
+{{if not $star}}
+{{$star = 20}}
+{{dbSet (toInt64 $id) "star" $star}}
+{{editMessage 631814483181830144 661166231742840863 (add 1 (toInt (getMessage 631814483181830144 661166231742840863).Content))}}
+{{else}}
+{{$star = $star.Value}}
+{{if ge $star 20.0}}{{$star = add (toFloat $star) (fdiv 300 $star)}}
+{{else}}{{$star = add $star 20}}{{end}}
+{{dbSet (toInt64 $id) "star" $star}}
+{{end}}
+{{.User.Mention}} used {{mentionRoleID 656355386177355776}}, you have {{round $star}}⭐
+Next ticket: {{round (add (toFloat $star) (fdiv 300 $star))}}⭐
+{{removeRoleID 656355386177355776 0}}
+{{editMessage 631814483181830144 660197843805405184 (add 1 (toInt (getMessage 631814483181830144 660197843805405184 ).Content))}}
+{{else}}
+{{.User.Mention}}, You don't have {{mentionRoleID 656355386177355776}} role, you can buy it in <#586604034228617236>.
+{{end}}
+
+{{/*STAR*/}}
+{{else if in (cslice "ticket" "star") $d.c}}
+{{$user := $d.User}}
+{{if gt (len $d.Args) 1}}{{$u := userArg (index $d.Args 1)}}
+{{if $u}}{{$user = $u}}{{$id64 = toInt64 $u.ID}}
+{{else}}Syntax is `{{$d.prefix}}star [user.id/user.mention]`{{$user = 0}}
+{{end}}{{end}}
+{{if $user}}
+{{$star := dbGet $id64 "star"}}
+{{if not $star}}{{$star = 0}}
+{{else}}{{$star = toFloat $star.Value}}
+{{end}}
+{{$s := (joinStr "" $user.Mention " has " (toInt (round $star)) "⭐\n")}}
+{{if lt (len $d.Args) 2}}
+{{if ne (toInt $star) 0}}
+{{$s = joinStr "" $s "Next ticket: " (toInt (round (add (toFloat $star) (fdiv 300 $star)))) "⭐"}}
+{{else}}
+{{$s = joinStr "" $s "Next ticket: " (toInt (round (add $star 20))) "⭐"}}
+{{end}}{{end}}
+{{sendMessage nil (cembed "description" $s "color" 16711782)}}
+{{end}}
+
+{{/*TOP*/}}
+{{else if in (cslice "top" "lb" "starlb" "startop" "leaderboard") $d.c}}
+{{$s := ""}}{{$page := 1}}
+{{$max := div (add 9 (toInt (getMessage 631814483181830144 661166231742840863).Content)) 10}}
+{{if gt (len $d.Args) 1}}{{$args1 := toInt (index $d.Args 1)}}{{if ne $args1 0}}
+{{$page = $args1}}
+{{if gt $page $max}}{{$page = $max}}
+{{end}}
+{{end}}{{end}}
+{{$rank := ""}}
+{{range $i, $t := dbTopEntries "star" 100 0}}
+{{if and (lt $i (mult $page 10)) (ge $i (mult (add $page -1) 10))}}
+{{$star := toInt (round (toFloat (index (split (toString .Value) "==") 0)))}}
+{{$s = joinStr "" $s "**" (add $i 1) " :** <@" (toInt $t.UserID) "> " $star "⭐\n"}}
+{{end}}
+{{if eq $id .UserID}}
+{{$rank = joinStr "" "  •  Your leaderboard rank: " (add $i 1)}}
+{{end}}
+{{end}}
+{{sendMessage nil (cembed "title" "⭐ Leaderboard" "description" $s "color" 16711850 "footer" (sdict "text" (joinStr "" "Page " $page "/" $max $rank)))}}
+
+{{/*RESULT*/}}
+{{else if in (cslice "result" "lotteryresult" "starresult") $d.c}}
+{{$s := ""}}{{$win := 0}}
+{{range $i, $t := dbTopEntries "star" 100 0}}
+{{$star := toInt (round .Value)}}
+{{$s = joinStr "" $s "**" (add $i 1) " :** <@" (toInt $t.UserID) "> " $star "⭐ - **Win numbers:** " (add 1 $win) "-" (add $star $win) "\n"}}
+{{$win = add $win $star}}
+{{end}}
+{{sendMessage nil (cembed "title" "⭐ Result" "description" $s "color" 16711850)}}
+
+{{/*HELP*/}}
+{{else if in (cslice "lottery") $d.c}}
+{{sendMessage nil (cembed "description" "If you recently bought ticket from <#586604034228617236>, you have chance to get one of the places. When you use your ticket, you are getting ⭐.\nMore ⭐ = more chances to get the prize!\nThe chances to win prize increases slower when you have more  ⭐\nIf you found mistake or the command doesn't work, tell your problems to <@471677056766312448>\n**Lottery commands:**\n`=useticket` Use a ticket, you need <@&656355386177355776> role.\n`=star` Check your star.\n`=top` or `=lb` Displays the ⭐ leaderboard.\n`=shop` Display ⭐ shop\n`=buy` Buy an item\n`=starstats` Display the ⭐ stats." "color" 16711850)}}
+
+{{/*STATS*/}}
+{{else if in (cslice "lotterystats" "starstats") $d.c}}
+{{$total := 0}}{{$user := 0}}{{$yazcoin := mult (toInt (getMessage 631814483181830144 660197843805405184 ).Content) 2300}}
+{{range $i, $t := dbTopEntries "star" 100 0}}
+{{$total = add $total (toInt (round $t.Value))}}
+{{$user = add $user 1}}
+{{end}}
+{{$embed := cembed "title" "Lottery #2 stats" "description" (joinStr "" "🥇: ?\n🥈: ?\n🥉: ?") "color" 16711850 "fields" (cslice (sdict "name" "Total ⭐" "value" (toString $total) "inline" true) (sdict "name" "Total <:yazcoin:561321461877309450> was spent" "value" (toString $yazcoin) "inline" true) (sdict "name" "Total user" "value" (toString $user) "inline" true) (sdict "name" "Lottery started" "value" (joinStr "" (humanizeDurationHours (currentTime.Sub (getMessage 600769135127035907 668499932675833866).Timestamp.Parse)) " ago")) )}}
+{{sendMessage nil $embed}}
+
+{{end}}{{end}}

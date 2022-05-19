@@ -1,0 +1,82 @@
+{{/*This command will accept a guess from a member as to what the deciphered roleplay phrase is.*/}}
+
+{{ deleteMessage nil .Message.ID 2}}
+
+{{/*The Event Roleplayer role that allows posting in the Lore channels.*/}}
+{{$roleplayRoleID := 832858528305643540}}
+
+{{$color := randInt 111111 999999}}
+{{$notifyMsg := sdict "title" "Cipher Guess" "color" $color}}
+
+{{if eq (len .CmdArgs) 1}}
+    {{/*Always do comparisons against the lowercased version.*/}}
+    {{$guess := upper (index .CmdArgs 0)}}
+    {{/*This will get the cslice of roleplay data.*/}}
+    {{$userData := (dbGet .Channel.ID .User.ID).Value}}
+    {{if $userData}}
+        {{$userDataConverted := sdict $userData}}
+        {{$health := toInt ($userDataConverted.Get "health")}}
+        {{$name := $userDataConverted.Get "name"}}
+        {{if ge $health 1}}
+            {{$rpData := (dbGet .Channel.ID $name).Value}}
+            {{if $rpData}}
+                {{/*Pull out the data required.*/}}
+                {{$rpDataConverted := sdict $rpData}}
+                {{$keyword := $rpDataConverted.Get "keyword"}}
+                {{$cipher := $rpDataConverted.Get "cipher"}}
+                {{$current := 0}}
+                {{$key := ""}}
+                {{range seq 0 (len $cipher)}}
+                    {{if ge $current (len $keyword)}}
+                        {{$current = 0}}
+                    {{end}}
+                    {{$rune := index $keyword $current}}
+                    {{$key = joinStr "" $key (printf "%c" $rune)}}
+                    {{$current = add $current 1}}
+                {{end}}
+                {{$key = upper $key}}
+                {{$numLetters := 26}}
+                {{$asciiARune := 65}}
+                {{$litmusText := ""}}
+                {{range seq 0 (len $cipher) -}}
+                    {{- $plainTextIndex := sub (index $cipher .) (index $key .) -}}
+                    {{- $asciiLetter := add (mod (add $plainTextIndex $numLetters) $numLetters) $asciiARune -}}
+                    {{- $litmusText = joinStr "" $litmusText (printf "%c" (toInt $asciiLetter)) -}}
+                {{- end}}
+                {{/*Check the guess for success.*/}}
+                {{if eq $guess $litmusText}}
+                    {{/*Finalize event and remove roles, clear roleplayer data.*/}}
+                    {{$rpDataConverted.Set "participants" ((cslice).AppendSlice $rpDataConverted.participants)}}
+                    {{$participants := ""}}
+                    {{range $index, $user := $rpDataConverted.participants -}}
+                        {{- takeRoleID $user.ID $roleplayRoleID -}}
+                        {{- dbDel .Channel.ID $user.ID -}}
+                        {{- $participants = joinStr "\n" $participants $user.Username -}}
+                    {{- end}}
+                    {{/*DM winner their victory receipt.*/}}
+                    {{$color := randInt 111111 999999}}
+                    {{$msg:= cembed "title" "Congratulations!" "description" (joinStr "" "You did it " .User.Mention ", you decoded the cipher and revealed it as `" $guess "`. You emerge victorious.\n\n**Well done!**\n\nPlease show a copy of this DM to staff to claim your reward.") "color" $color}}
+                    {{sendDM $msg}}
+                    {{/*Notify all members in the roleplay channel.*/}}
+                    {{$notifyMsg.Set "description" (joinStr "" .User.Mention "managed to successfully decode the cipher. The answer is:\n`" $guess "`\n\nThis concludes your roleplay event! Thank you for playing, we hope you all enjoyed yourselves and will try some of the other settings.\n\nThe following participants have been removed from this roleplay:\n" $participants)}}
+                {{else}}
+                    {{/*Reduce player's life by 1.*/}}
+                    {{$reducedNumHealth := sub $health 1}}
+                    {{$userDataConverted.Set "health" $reducedNumHealth}}
+                    {{dbSetExpire .Channel.ID .User.ID $userDataConverted 604800}}
+                    {{$notifyMsg.Set "description" (joinStr " " .User.Mention "you feel a small numbing sensation spread through your body. At the realization your guess was incorrect, weakness grips you for a moment. You lose 1 x 💗, but dig deep, drawing on your remaining strength reserves. You shake feeling back into your limbs and shrug off the sensation.")}}
+                {{end}}
+            {{else}}
+                {{$notifyMsg.Set "description" "The roleplay data for this roleplay cannot be found."}}
+            {{end}}
+        {{else}}
+            {{$notifyMsg.Set "description" (joinStr " " .User.Mention "you are too weak to endure the rigors of manifesting a guess. Heal up and try again, or convince another participant to guess on your behalf.")}}
+        {{end}}
+    {{else}}
+        {{$notifyMsg.Set "description" (joinStr " " .User.Mention "you are not part of this, active roleplay.")}}
+    {{end}}
+{{else}}
+    {{$notifyMsg.Set "description" (joinStr " " .User.Mention "correct usage of the command:" "`-guess" "<deciphered text gues>`")}}
+{{end}}
+{{/*Notify in-channel.*/}}
+{{$hush := sendMessage nil (cembed $notifyMsg)}}

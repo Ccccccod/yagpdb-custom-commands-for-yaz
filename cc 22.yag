@@ -1,0 +1,43 @@
+{{/*Verification*/}}
+
+{{$id := .User.ID}}
+{{$emoji := .Reaction.Emoji.Name}}
+{{$avatar := .User.AvatarURL "4096"}}
+
+{{if eq .Reaction.Emoji.Name "✅"}}
+	{{$yaz := 529140551946338305}}
+	{{$staff := 530934024492023818}}
+	{{$mania := 529155155103580191}}
+	{{$bot := 529172310263857182}}
+	{{$being := 670836200054980618}}
+	{{$unverified := 545436740089806852}}
+	{{$mod := getMember .User.ID}}
+	{{$member := getMember .ReactionMessage.Author.ID}}
+	{{if and $member (or (in $mod.Roles $yaz) (in $mod.Roles $staff))}}
+		{{$user := $member.User}}
+		{{$avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" (toString $user.ID) "/" $user.Avatar ".png")}}
+		{{if not (or (in $member.Roles $mania) (in $member.Roles $bot))}}
+			{{if $member.User.Bot}}
+				{{giveRoleID $user.ID $bot}}
+			{{else}}
+				{{giveRoleID $user.ID $mania}}
+			{{end}}
+			{{takeRoleID $user.ID $being}}{{takeRoleID $user.ID $unverified}}
+			{{$messageID := sendMessageRetID nil (joinStr "" $user.Mention " has been verified by " $mod.User.Mention)}}
+			{{sendMessage 568917434581647360 (cembed
+				"author" (sdict "name" $user.String "icon_url" $avatar)
+				"color" 65280
+				"title" "Verified"
+				"fields" (cslice
+					(sdict "name" "User" "value" $user.Mention "inline" true)
+					(sdict "name" "Moderator" "value" $mod.User.Mention "inline" true)
+					(sdict "name" "Message" "value" (joinStr "" "[Message link](https://discordapp.com/channels/529138809246580745/" .Channel.ID "/" $messageID ")") "inline" true))
+				"footer" (sdict "text" (joinStr "" "User ID: " $user.ID))
+				"timestamp" currentTime
+			)}}
+		{{else}}
+			{{$mod.User.Mention}} "This member is Verified"
+			deleteResponse
+		{{end}}
+	{{end}}
+{{end}}

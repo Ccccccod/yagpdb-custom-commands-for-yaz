@@ -1,0 +1,6 @@
+{{$args := parseArgs 1 "" (carg "string" "")}}
+{{if eq .StrippedMsg ""}}
+    {{execAdmin "cc"}}
+{{else}}
+    {{sendMessage nil (complexMessage "file" (execAdmin "cc " .StrippedMsg))}}
+{{end}}

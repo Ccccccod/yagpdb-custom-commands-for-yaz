@@ -1,0 +1,33 @@
+{{/*QUOTE*/}}
+{{else if eq $command "quote"}}
+{{$quote := 791356308472201237}}
+{{$quoteMuted := 802214670508884048}}
+{{/*COOLDOWN*/}}
+{{$id := 0}}{{$key := "cooldown_quote"}}
+{{if (dbGet (toInt64 $id) $key)}}
+{{/*WAIT COOLDOWN*/}}
+{{.User.Mention}} Someone has already posted a quote today!
+{{else}}
+{{/*COMMAND*/}}
+{{$args := parseArgs 2 "" (carg "string" "quote") (carg "string" "quote")}}
+{{if eq (toInt64 (dbGet (toInt64 0) "quote_last").Value) .User.ID}}
+{{.User.Mention}} You can't post 2 quotes in a row!
+{{else}}
+{{$t := (toDuration (currentTime.Sub (newDate 2000 1 1 15 0 0)))}}
+{{$d := mod $t 86400000000000}}
+{{$d := toDuration (add 86400000000000 (mult $d -1)) }}
+{{$d := div $d 1000000000}}
+{{dbSetExpire (toInt64 $id) $key "cooldown" $d}}
+{{$embed := cembed 
+  "description" ($args.Get 1)
+  "color" $col
+  "author" (sdict "name" .User.String "icon_url" $avatar) 
+  "thumbnail" (sdict "url" $avatar) 
+  "footer" (sdict "text" (joinStr "" "User ID: " .User.ID) "icon_url" $avatar) 
+  "timestamp" currentTime
+}}
+{{$post := sendMessageRetID $quote $embed}}
+{{addMessageReactions $quote $post "👍" "👎"}}
+{{dbSetExpire (toInt64 $id) "quote_last" (toString .User.ID) 604800}}
+{{sendMessage 530912139481972757 (joinStr "" "<#" $quote "> has been locked for " (humanizeDurationSeconds (toDuration (mult $d 1000000000))))}}
+{{end}}{{end}}

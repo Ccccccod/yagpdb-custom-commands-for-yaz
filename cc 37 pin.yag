@@ -1,0 +1,49 @@
+{{/*VARIABLES*/}}
+{{$pin := 903687590664896532}}
+
+{{$args := parseArgs 1 "" (carg "int" "Message id" 1)}}
+{{$channel := .Channel}}
+{{$messageId := $args.Get 0}}
+{{$message := getMessage $channel.ID $messageId}}
+{{if eq $channel.ID $pin}}
+    {{/*Message in #pin can not be pinned*/}}
+{{else if not $message}}
+    {{.User.Mention}} Message not found!{{deleteResponse}}
+{{else}}
+    {{$author := $message.Author}}
+    {{$avatar := $author.AvatarURL "4096"}}
+    {{$member := getMember $author.ID}}
+    {{$nick := $author.String}}
+    {{$col := 16777215}}
+    {{if $member}}
+        {{if $member.Nick}}
+            {{$nick = $member.Nick}}
+        {{end}}
+        {{$pos := 0}}{{$r := $member.Roles}}{{range .Guild.Roles}}{{if and (in $r .ID) (.Color) (lt $pos .Position)}}{{$pos = .Position}}{{$col = .Color}}{{end}}{{end}}
+    {{end}}
+    {{$messageLink := printf "https://discord.com/channels/%d/%d/%d" .Guild.ID $channel.ID $messageId}}
+    {{$source := printf "[Jump!](%s)" $messageLink}}
+
+    {{$embed := sdict
+    "author" (sdict "name" $nick "url" $avatar "icon_url" $avatar)
+    "description" $message.Content
+    "color" $col
+    "fields" (cslice
+        (sdict "name" "Source" "value" $source "inline" true)
+        (sdict "name" "Channel" "value" (printf "<#%d>" $channel.ID) "inline" true)
+        (sdict "name" "Pinned by" "value" .User.Mention "inline" true)
+    )
+    "footer" (sdict "text" (printf "User ID: %d" $author.ID))
+    "timestamp" $message.Timestamp
+    }}
+    {{if $message.Attachments}}
+        {{$embed.Set "image" (sdict "url" (index $message.Attachments 0).ProxyURL)}}
+    {{end}}
+
+    {{deleteTrigger 0}}
+    {{sendMessage $pin (cembed $embed)}}
+    {{sendMessage nil (cembed
+        "color" 16711782
+        "description" (printf "%s pinned [a message](%s) to this channel. See all <#%d>" .User.Mention $messageLink $pin)
+    )}}
+{{end}}

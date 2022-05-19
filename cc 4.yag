@@ -1,0 +1,57 @@
+{{/*SHOP ADVERTISE*/}}
+{{$ad := ""}}
+{{$time := 0}}
+{{$now := currentTime}}
+
+{{/*Merry Chrismas*/}}
+{{if eq (getMessage 631814483181830144 654303631390277652).Content "1"}}
+    {{if gt (toInt ((newDate 2020 1 1 00 00 00).Sub $now)) 0}}
+        {{$ad = joinStr "" $ad (joinStr "" "**Event Items: <@&649848710808731700>, <@&649848734435246092>, use **`$item-info`** commands for more information - Time left: " (humanizeDurationHours ( (newDate 2020 1 1 00 00 00).Sub $now)) "**" )}}
+    {{end}}
+    {{/*DISCOUNTED ITEMS*/}}
+    {{$time = newDate 2022 1 9 9 00 00}}
+    {{if gt (toInt ($time.Sub $now)) 0}}
+        {{$name := "Discounted Blush Pink"}}
+        {{$ad = joinStr "" $ad (joinStr "" "\nDiscounted items: **" $name "** - **20%** off - Time left: **" (humanizeDurationMinutes ( $time.Sub $now)) "**. Say `$item-info " $name "` for more information" )}}
+    {{end}}
+    {{/*ROB EVENT*/}}
+    {{$time = newDate 2021 1 17 9 00 00}}
+    {{if gt (toInt ($time.Sub $now)) 0}}
+        {{$ad = joinStr "" $ad (joinStr "" "**Rob event:\n`$withdraw`, `$deposit`, `$sell-item` and `Gambling` are disabled.\n-`$rob`'s cooldown is 5m\n-`$rob` and `$crime`'s fail amount: 0-500\n-New item: <@&715855284400291871>, price: <:yazcoin:561321461877309450>50000. Buy this item to win the event.\n- Time left: " (humanizeDurationMinutes ($time.Sub $now)) "**" )}}
+    {{end}}
+    {{/*SLUT EVENT*/}}
+    {{$time = newDate 2022 2 16 9 00 00}}
+    {{if gt (toInt ($time.Sub $now)) 0}}
+        {{$ad = joinStr "" $ad (joinStr "" "\n**Slut event:** Slut's income is increased by 15%\n- Time left: " (humanizeDurationMinutes ($time.Sub $now)) "" )}}
+    {{end}}
+    {{/*SEND AD*/}}
+    {{if ne $ad ""}}
+        {{/*deleteMessage 586604034228617236 (getMessage 631814483181830144 654310199368220672).Content 0*/}}
+        {{$m := sendMessageNoEscapeRetID 586604034228617236 (cembed "title" "Shop Announcement" "description" $ad "color" 16711782 "thumbnail" (sdict "url" "https://media.discordapp.net/attachments/530912139481972757/664550865700519946/1f6d2.png"))}}
+        {{editMessage 631814483181830144 654303631390277652 "0"}}{{editMessage 631814483181830144 654310199368220672 $m}}
+    {{end}}
+{{end}}
+
+{{/*MESSAGE COUNT*/}}
+{{$key := "message count"}}{{$s := ""}}{{$total := 0}}
+{{range $i, $t := dbTopEntries $key 100 0}}
+{{$total = add $total (toInt .Value)}}
+{{$s = joinStr "" $s "**" (add $i 1) " :** <#" (toInt .UserID) "> " (toInt .Value) "\n"}}
+{{end}}
+{{$time1 := joinStr "" "**" ($now.Format "Monday, 02 January 2006")}}
+{{$s = joinStr "" $time1 "\nMessage Count\nTotal : **" $total "\n" $s "**Member Count: " .Guild.MemberCount "**"}}
+{{$chn := 671389089718730782}}{{$msg := toInt (getMessage 631814483181830144 671725973703622658).Content}}
+{{if eq $time1 (index (split (getMessage $chn $msg).Content "\n") 0)}}
+{{editMessage $chn $msg $s}}
+{{else}}
+{{editMessage 631814483181830144 671725973703622658 (toString (sendMessageRetID $chn (joinStr "" $time1 "\n**")))}}
+{{execCC 7 671389089718730782 0 (sdict "cmd" "dbClear" "key" "message count")}}
+{{end}}
+
+
+{{/*STATISTICS*/}}
+{{$bc := toInt (dbGet 0 "bot_count").Value}}
+{{editChannelName 629033623517134858 (joinStr "" "Member Count: " .Guild.MemberCount)}}
+{{editChannelName 629033625371017233 (joinStr "" "User Count: " (sub .Guild.MemberCount $bc))}}
+{{editChannelName 629033624318246912 (joinStr "" "Bot Count: " $bc)}}
+

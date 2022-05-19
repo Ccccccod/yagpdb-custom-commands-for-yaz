@@ -1,0 +1,138 @@
+{{$id := .User.ID}}{{$emoji := .Reaction.Emoji.Name}}{{$avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" (toString .User.ID) "/" .User.Avatar ".png")}}
+
+{{/*COOL COMMAND1️⃣2️⃣3️⃣4️⃣5️⃣6️⃣7️⃣8️⃣9️⃣🔟*/}}
+{{$db := dbGet (toInt64 $id) "cmd"}}
+{{$spl := split (toString $db.Value) "=="}}
+{{$cmd := index $spl 0}}
+{{$datamsg := 0}}
+{{if gt (len $spl) 1}}{{$datamsg = toInt (index $spl 1)}}
+{{end}}
+{{if and $db .ReactionAdded (eq .ReactionMessage.ID $datamsg)}}
+
+{{/*DIEP LINK*/}}
+{{if eq $cmd "dieplink_gamemode"}}
+{{$mode := ""}}
+{{if eq "1️⃣" $emoji}}{{$mode = "2 Teams"}}
+{{else if eq "2️⃣" $emoji}}{{$mode = "4 Teams"}}
+{{else if eq "3️⃣" $emoji}}{{$mode = "Sandbox"}}
+{{else if eq "4️⃣" $emoji}}{{$mode = "Domination"}}{{end}}
+{{if ne $mode ""}}
+{{$embed := index (getMessage nil .Reaction.MessageID).Embeds 0}}
+{{editMessage nil .Reaction.MessageID (cembed "color" 16711782 "description" "**What location is that link? Hold L in game to see server location\n1️⃣Miami\n2️⃣LA\n3️⃣Singapore\n4️⃣Amsterdam\n5️⃣Sydney**" "author" (sdict "name" .User.String "icon_url" $avatar) "fields" (cslice (sdict "name" "Link" "value" (index $embed.Fields 0).Value "inline" true) (sdict "name" "Gamemode" "value" $mode "inline" true)) "footer" (sdict "text" "Type cancel to quit"))}}
+{{dbSetExpire (toInt64 $id) "cmd" (joinStr "==" "dieplink_location" .Reaction.MessageID) 60}}
+{{deleteAllMessageReactions nil .Reaction.MessageID}}
+{{addMessageReactions nil .Reaction.MessageID "1️⃣" "2️⃣" "3️⃣" "4️⃣" "5️⃣"}}
+{{end}}
+
+{{else if eq $cmd "dieplink_location"}}
+{{$location := ""}}
+{{if eq "1️⃣" $emoji}}{{$location = "Miami"}}
+{{else if eq "2️⃣" $emoji}}{{$location = "LA"}}
+{{else if eq "3️⃣" $emoji}}{{$location = "Singapore"}}
+{{else if eq "4️⃣" $emoji}}{{$location = "Amsterdam"}}
+{{else if eq "5️⃣" $emoji}}{{$location = "Sydney"}}{{end}}
+{{if ne $location ""}}
+{{$embed := index (getMessage nil .Reaction.MessageID).Embeds 0}}
+{{editMessage nil .Reaction.MessageID (cembed "color" 16711782 "description" "**Any Additional Information? If no, react with 👌**" "author" (sdict "name" .User.String "icon_url" $avatar) "fields" (cslice (sdict "name" "Link" "value" (index $embed.Fields 0).Value "inline" true) (sdict "name" "Gamemode" "value" (index $embed.Fields 1).Value "inline" true) (sdict "name" "Server Location" "value" $location "inline" true)) "footer" (sdict "text" "Type cancel to quit"))}}
+{{dbSetExpire (toInt64 $id) "cmd" (joinStr "==" "dieplink_additional" .Reaction.MessageID) 60}}
+{{deleteAllMessageReactions nil .Reaction.MessageID}}
+{{addMessageReactions nil .Reaction.MessageID "👌"}}
+{{end}}
+
+{{else if eq $cmd "dieplink_additional"}}
+{{$msg := $datamsg}}
+{{$embed := index (getMessage nil $msg).Embeds 0}}
+{{$msg = sendMessageRetID 529144661810479104 (cembed "color" 16711782 "author" (sdict "name" .User.String "icon_url" $avatar) "fields" (cslice (sdict "name" "Link" "value" (index $embed.Fields 0).Value "inline" true) (sdict "name" "Gamemode" "value" (index $embed.Fields 1).Value "inline" true) (sdict "name" "Server Location" "value" (index $embed.Fields 2).Value "inline" true)) "footer" (sdict "text" (joinStr "" "ID: " .User.ID)) "timestamp" currentTime)}}
+{{deleteAllMessageReactions nil .Reaction.MessageID}}
+{{.User.Mention}}, Your link has been posted
+{{deleteMessage 529144661810479104 $msg 18000}}
+{{dbDel (toInt64 $id) "cmd"}}
+{{end}}
+
+{{/*POLL*/}}
+{{else if and (eq (index (split (toString $db.Value) "==") 0) "poll") (eq $emoji "👌")}}
+{{$embeds := (getMessage nil .Reaction.MessageID).Embeds}}
+{{if gt (len $embeds) 0}}
+{{$polls := 575494044864479262}}
+{{$poll := sendMessageRetID $polls (index $embeds 0)}}
+{{$count := toInt (index (split (toString $db.Value) "==") 2)}}
+{{if eq $count 0}}{{addMessageReactions $polls $poll "✅" "❌"}}
+{{else}}
+{{range $i, $react := (getMessage 631814483181830144 657309180717170708).Reactions}}
+{{if lt $i $count}}{{addMessageReactions $polls $poll $react.Emoji.Name}}{{end}}
+{{end}}
+{{end}}
+{{$key := "cooldown_poll"}}
+{{dbSetExpire (toInt64 $id) $key true 604800}}
+{{dbDel (toInt64 $id) "cmd"}}
+{{end}}
+
+{{end}}
+
+{{/*sandbox*/}}
+{{if and (eq .Reaction.Emoji.ID 708744710906183690) .ReactionAdded}}
+{{/*execCC 30 nil 0 (sdict .)*/}}
+{{end}}
+
+{{/*VERIFICATION*/}}
+{{if and (eq .Reaction.ChannelID 670518064235937823) .ReactionAdded}}
+{{if not (hasRoleID 529155155103580191)}}
+{{removeRoleID 545436740089806852 0}}
+{{addRoleID 670836200054980618}}
+{{$chn := 670187195079983104}}
+{{$msg := 670188746511089684}}
+{{if eq .Reaction.Emoji.Name "🇮🇳"}}{{$msg = 680171332180115485}}
+{{else if eq .Reaction.Emoji.Name "🇪🇸"}}{{$msg = 680170752519176287}}
+{{else if eq .Reaction.Emoji.Name "🇸🇦"}}{{$msg = 680170752519176287}}
+{{else if eq .Reaction.Emoji.Name "🇨🇵"}}{{$msg = 670523106510766090}}
+{{else if eq .Reaction.Emoji.Name "🇯🇵"}}{{$msg = 670533175528783884}}
+{{else if eq .Reaction.Emoji.Name "🇳🇱"}}{{$msg = 670523275599937576}}
+{{else if eq .Reaction.Emoji.Name "🇷🇺"}}{{$msg = 670947060874477568}}
+{{else if eq .Reaction.Emoji.Name "🇰🇷"}}{{$msg = 682449814780379172}}
+{{else if eq .Reaction.Emoji.Name "🇻🇳"}}{{$msg = 670188962152972298}}
+{{else if eq .Reaction.Emoji.Name "🇩🇪"}}{{$msg = 707809943901831190}}
+{{end}}
+{{$msg = index (split (getMessage $chn $msg).Content "||") 1}}
+{{$msg = reReplace "{\\.User\\.Mention}" $msg .User.Mention}}
+{{$number := toString .Guild.MemberCount}}
+{{$math := joinStr " " (randInt 100 1000) "x" (randInt 100 1000) "= ?"}}
+{{$db := dbGet (toInt64 $id) "verify"}}
+{{if $db}}
+	{{$db = sdict $db.Value}}
+	{{$number = $db.number}}
+	{{$math = joinStr " " $db.math1 "x" $db.math2 "= ?"}}
+{{end}}
+{{$msg = reReplace "{\\.Guild\\.MemberCount}" $msg $number}}
+{{$msg = joinStr "" $msg "\n\n**4. " $math "**"}}
+{{sendMessage 545435207340392448 $msg}}
+{{execCC 7 670518064235937823 1200 (sdict "cmd" "role" "user" .Reaction.UserID "giverole" 545436740089806852 "takerole" 670836200054980618 "ifhas" 670836200054980618)}}
+{{end}}{{end}}
+
+{{/*STAFF VOTING*/}}
+{{if and (eq .Reaction.ChannelID 658893640038613002) .ReactionAdded}}
+{{/*👌👌*/}}
+{{if and (eq .ReactionMessage.Author.ID 204255221017214977) (eq $emoji "👌")}}
+{{$msg := toInt (getMessage 631814483181830144 663319542810017871).Content}}
+{{if ne $msg 0}}
+{{deleteMessage nil .Reaction.MessageID 0}}
+{{editMessage 631814483181830144 663319542810017871 "0"}}
+{{addMessageReactions nil $msg "✅" "❌"}}
+{{$ask := (toInt (getMessage 631814483181830144 663319354728906759).Content)}}
+{{end}}
+{{/*🇩🇴🇳🇪*/}}
+{{else if and (eq $emoji "🇩") (in (cslice 471677056766312448 185919739678294016 406794858464804866 710848707368583249) $id)}}
+{{addReactions "🇩" "🇴" "🇳" "🇪"}}
+{{end}}{{end}}
+
+{{/*LOG*/}}
+{{$add := " remov"}}{{$color := 16711680}}{{if .ReactionAdded}}{{$add = " add"}}{{$color = 65280}}{{end}}
+{{$desc := joinStr "" .User.Mention $add "ed an reaction in <#" .Reaction.ChannelID ">\n"}}
+{{if ne .Reaction.Emoji.ID 0}}
+{{$a := ""}}
+{{if .Reaction.Emoji.Animated}}
+{{$a = "a"}}
+{{end}}
+{{$desc = joinStr "" $desc "Emoji: <" $a ":" .Reaction.Emoji.Name ":" .Reaction.Emoji.ID ">\nEmoji ID: " .Reaction.Emoji.ID "\n"}}
+{{end}}
+{{$desc = joinStr "" $desc "Emoji Name: " .Reaction.Emoji.Name "\n[Message Link](https://discordapp.com/channels/529138809246580745/" .Reaction.ChannelID "/" .Reaction.MessageID ")"}}
+{{sendMessage 650383819135778857 (cembed "color" $color "author" (sdict "name" .User.String "icon_url" $avatar) "description" $desc "footer" (sdict "text" (joinStr "" "Message ID: " .Reaction.MessageID)) "timestamp" currentTime)}}
