@@ -61,15 +61,15 @@
 {{end}}
 {{/*No DM*/}}
 {{$embed := sdict
-    "title" (joinStr "" .User.String " has boosted the server" $time " times   🥳")
-    "description" (joinStr "" "Thank you for boosting the server " .User.Mention "!")
-    "color" 16023551
-    "fields" (cslice
-        (sdict "name" "__Boost Count__" "value" (print $time) "inline" false)
-    )
-    "thumbnail" (sdict "url" (index (cslice "https://cdn.discordapp.com/emojis/733786543268823050.gif?v=1" "https://cdn.discordapp.com/emojis/839549945773424711.gif?v=1" "https://cdn.discordapp.com/emojis/838031358898601984.gif?v=1" "https://cdn.discordapp.com/emojis/662438165348483074.gif?v=1" "https://cdn.discordapp.com/emojis/838030979221946368.gif?v=1") (randInt 5)))
-    "footer" (sdict "text" "Boosted" "icon_url" `https://imgur.com/gHm2Uuw.png`)
-    "timestamp" currentTime
+	"title" (joinStr "" .User.String " has boosted the server" $time " times   🥳")
+	"description" (joinStr "" "Thank you for boosting the server " .User.Mention "!")
+	"color" 16023551
+	"fields" (cslice
+		(sdict "name" "__Boost Count__" "value" (print $time) "inline" false)
+	)
+	"thumbnail" (sdict "url" (index (cslice "https://cdn.discordapp.com/emojis/733786543268823050.gif?v=1" "https://cdn.discordapp.com/emojis/839549945773424711.gif?v=1" "https://cdn.discordapp.com/emojis/838031358898601984.gif?v=1" "https://cdn.discordapp.com/emojis/662438165348483074.gif?v=1" "https://cdn.discordapp.com/emojis/838030979221946368.gif?v=1") (randInt 5)))
+	"footer" (sdict "text" "Boosted" "icon_url" `https://imgur.com/gHm2Uuw.png`)
+	"timestamp" currentTime
 }}
 {{sendMessage $levelUp (cembed $embed)}}
 
@@ -92,26 +92,26 @@
 	{{- end}}
 {{- end}}
 {{$dmEmbed := sdict
-    "title" "**Thank you for boosting Yaz's Mania!   <:blobheart:838031457644970024>**"
-    "description" (print "In return, you will receive the following reward:" (mult 100000 $time) " <:rainbow_yazcoin:807865162345873429> (Yazcoins)\n\nYazcoins are a fictional currency that can be used in <#586604034228617236> to buy Color Roles, Custom Roles, and more.")
-    "color" 16023551
-    "author" (sdict "name" .User.String "icon_url" (.User.AvatarURL "1024"))
-    "thumbnail" (sdict "url" "https://yt3.ggpht.com/ytc/AAUvwnjlGnL2_QCygVzsHc0AjnOw1E45YO5RTJyJeE81ww=s88-c-k-c0x00ffffff-no-rj")
+	"title" "**Thank you for boosting Yaz's Mania!   <:blobheart:838031457644970024>**"
+	"description" (print "In return, you will receive the following reward:" (mult 100000 $time) " <:rainbow_yazcoin:807865162345873429> (Yazcoins)\n\nYazcoins are a fictional currency that can be used in <#586604034228617236> to buy Color Roles, Custom Roles, and more.")
+	"color" 16023551
+	"author" (sdict "name" .User.String "icon_url" (.User.AvatarURL "1024"))
+	"thumbnail" (sdict "url" "https://yt3.ggpht.com/ytc/AAUvwnjlGnL2_QCygVzsHc0AjnOw1E45YO5RTJyJeE81ww=s88-c-k-c0x00ffffff-no-rj")
 }}
 {{if not $hasCustomRole}}
-    {{$optionChange := joinStr "" " + " (toString (mult (sub $time 1) 100000)) " <:rainbow_yazcoin:807865162345873429> (Yazcoins)"}}
-    {{$fields := (cslice
-        (sdict
-            "name" "__Option 1__"
-            "value" (joinStr "" "A Custom Role lasting for 30 days" $optionChange "\n\nYou get to choose the Custom Role's color (as a hex code) and name.\n\n**Example Message:**\nI would like a 30 day Custom Role with the color #21a6ff and name \"Bob\"") "inline" true
-        )
-        (sdict
-            "name" "__Option 2__"
-            "value" (joinStr "" (toString (mult 100000 $time)) " <:rainbow_yazcoin:807865162345873429> (Yazcoins)\n\nYazcoins are a fictional currency that can be used in <#586604034228617236> to buy Color Roles, Custom Roles, and more. \n\n**Example Messages:**\nI would like 100000 <:rainbow_yazcoin:807865162345873429>\n\nI would like 100000 Yazcoins") "inline" true
-        )
-    )}}
-    {{$dmEmbed.Set "description" "In return, you may claim one of the following rewards in <#643292435660668928>:"}}
-    {{$dmEmbed.Set "fields" $fields}}
+	{{$optionChange := joinStr "" " + " (toString (mult (sub $time 1) 100000)) " <:rainbow_yazcoin:807865162345873429> (Yazcoins)"}}
+	{{$fields := (cslice
+		(sdict
+			"name" "__Option 1__"
+			"value" (joinStr "" "A Custom Role lasting for 30 days" $optionChange "\n\nYou get to choose the Custom Role's color (as a hex code) and name.\n\n**Example Message:**\nI would like a 30 day Custom Role with the color #21a6ff and name \"Bob\"") "inline" true
+		)
+		(sdict
+			"name" "__Option 2__"
+			"value" (joinStr "" (toString (mult 100000 $time)) " <:rainbow_yazcoin:807865162345873429> (Yazcoins)\n\nYazcoins are a fictional currency that can be used in <#586604034228617236> to buy Color Roles, Custom Roles, and more. \n\n**Example Messages:**\nI would like 100000 <:rainbow_yazcoin:807865162345873429>\n\nI would like 100000 Yazcoins") "inline" true
+		)
+	)}}
+	{{$dmEmbed.Set "description" "In return, you may claim one of the following rewards in <#643292435660668928>:"}}
+	{{$dmEmbed.Set "fields" $fields}}
 {{end}}
 {{sendDM (cembed $dmEmbed)}}
 
