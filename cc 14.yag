@@ -1,0 +1,15 @@
+{{ $id := .User.ID }}
+{{ $id64 := toInt64 $id }}
+
+{{ $stars := toInt (dbGet 0 "starsFalling").Value }}
+{{ if $stars }}
+	{{ $msgID := (dbGet 0 "starMsgID").Value }}
+	{{ $button := cbutton "label" "Catch Stars" "style" "primary" "disabled" true }}
+	{{ $msg := complexMessageEdit "content" (printf "Congratulations! 🎉 %s caught the %d stars! 🌟 They're all yours!" .User.Mention $stars) "buttons" $button }}
+	{{ editMessage nil $msgID $msg }}
+	{{ sendResponse nil "" }}
+	{{/* deleteMessage nil $msgID 8 */}}
+	{{ dbDel 0 "starsFalling" }}
+	{{ dbIncr $id64 "star" $stars }}
+	{{ dbDel 0 "starMsgID" }}
+{{ end }}

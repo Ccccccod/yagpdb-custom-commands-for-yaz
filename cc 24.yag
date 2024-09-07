@@ -1,57 +1,42 @@
-{{$id := .User.ID}}{{$avatar := joinStr "" "https://cdn.discordapp.com/avatars/" (toString .User.ID) "/" .User.Avatar ".png"}}
+{{$id := .User.ID}}{{$id64 := toInt64 $id}}{{$idStr := toString $id}}{{$avatar := joinStr "" "https://cdn.discordapp.com/avatars/" (toString .User.ID) "/" .User.Avatar ".png"}}
 
 {{if eq .User.ID 6836861621870264650}}
 {{deleteTrigger}}
 {{giveRoleID 683686162187026465 771268310707732490}}
 {{end}}
 
-{{/*FALLING STAR*/}}{{if and (eq .Channel.ID 529138809246580747) false}}
-{{$item := split "0=0=0=0=0=0=0=0=0=0" "="}}
-{{$db1 := dbGet (toInt64 $id) "stari"}}
-{{if $db1}}{{$item := split $db1.Value "="}}
-{{end}}
-{{$num := (getMessage 631814483181830144 661250939440857088).Content}}
-{{if eq .Message.Content "=star"}}
-{{$db := dbGet (toInt64 0) "star"}}
-{{if $db}}
-{{dbDel (toInt64 0) "star"}}
-{{/*INCREASE*/}}
-{{$bonus := 0}}
-{{$bonus = add $bonus (toInt (index $item 0)) (toInt (index $item 1)) (toInt (index $item 2))}}
-{{.User.Mention}} has claimed {{toInt $db.Value}}⭐{{if ne $bonus 0}} + {{$bonus}}⭐{{end}}
-{{editMessage 631814483181830144 661250939440857088 "0"}}
-{{deleteMessage 529138809246580747 (toInt (getMessage 631814483181830144 661502671026388992).Content) 0}}
-{{/*Add ⭐*/}}
-{{$star := dbGet (toInt64 $id) "star"}}
-{{if not $star}}
-{{dbSet (toInt64 $id) "star" (toInt $db.Value)}}
-{{editMessage 631814483181830144 661166231742840863 (add 1 (toInt (getMessage 631814483181830144 661166231742840863).Content))}}
-{{else}}
-{{$star = $star.Value}}
-{{$star = add (toFloat $star) $db.Value}}
-{{dbSet (toInt64 $id) "star" $star}}
-{{end}}
-{{sendMessage 668368782476967954 (joinStr "" .User.Mention " has claimed " (toInt $db.Value) "⭐+" $bonus "⭐")}}
-{{deleteResponse 8}}
-{{end}}
-{{deleteTrigger 0}}
-{{else if ne (toString $id) (getMessage 631814483181830144 661251362582953984).Content}}
-{{editMessage 631814483181830144 661251362582953984 (toString $id)}}
-{{$chance := 50}}
-{{if eq (index $item 4) "1"}}
-{{$chance = 45}}
-{{end}}
-{{if and (gt (toInt $num) 20) (eq 0 (randInt $chance)) (not (dbGet (toInt64 0) "star"))}}
-{{$stars := randInt 5 11}}
-{{dbSet (toInt64 0) "star" $stars}}
-{{$embed := cembed "description" (joinStr "" $stars "⭐ is falling, say `=star` to claim them") "image" (sdict "url" "https://tempaper.com/pub/media/catalog/product/cache/67acb6dfda0f47569b1bec6ec63e35bb/f/a/fallingstars_greyandmetalicsilver_tk606_01_1_2.jpg")}}
-{{$msgid := sendMessageRetID nil $embed}}
-{{editMessage 631814483181830144 661502671026388992 (toString $msgid)}}
-{{else}}
-{{editMessage 631814483181830144 661250939440857088 (toString (add 1 (toInt $num)))}}
-{{end}}
-{{end}}
-{{end}}
+{{/*FALLING STAR IN CHAT*/}}
+{{ if eq .Channel.ID 529138809246580747 }}
+	{{ $EXPIRE_SEC := 60 }}
+	{{ $ENERGY_LIMIT := 20 }}
+	{{ $STAR_NAME := "Star" }}
+	{{ $STAR_IMG := "https://media.discordapp.net/attachments/717791883405033575/1281960752529539092/stars.png?ex=66dd9e7d&is=66dc4cfd&hm=a2ab8bb11e28e79591e96528941e45692bf07e246d46697dd880de3340678b86" }}
+
+	{{ $starsFalling := dbGet 0 "starsFalling" }}
+	{{ if not $starsFalling }}
+		{{ dbSetExpire $id64 "starActiveUsers" true $EXPIRE_SEC }}
+		{{ if ne $idStr (toString (dbGet 0 "starPreviousUserID")) }}
+			{{ dbSetExpire 0 "starPreviousUserID" $idStr 3600 }}
+			{{ $energy := (dbGet 0 "starEnergy").Value }}
+			{{ if gt (toInt $energy) $ENERGY_LIMIT }}
+				{{ $activeUsers := mult 2 (dbCount "starActiveUsers") }}
+				{{ $chance := toInt (min (sub 50 $activeUsers) 30) }}
+				{{ if and (eq $chance 0) (gt $activeUsers 2) }}
+					{{/* STARS FALL */}}
+					{{ $stars := (add 6 (randInt 9) $activeUsers) }}
+					{{ dbSetExpire 0 "starsFalling" $stars 300 }}
+					{{ dbDel 0 "starEnergy" }}
+					{{ $button := cbutton "label" "Catch Stars" "custom_id" "star-take" "style" "primary" }}
+					{{ $embed := cembed "title" (printf "⭐ %d stars are falling from the sky! Tap the button to catch them before they disappear!" $stars) "color" 16776960 "image" (sdict "url" $STAR_IMG) }}
+					{{ $msgId := sendMessageRetID nil (complexMessage "buttons" $button "embed" $embed) }}
+					{{ dbSetExpire 0 "starMsgID" (toString $msgId) 300 }}
+				{{ end }}
+			{{ else }}
+				{{ dbSetExpire 0 "starEnergy" (add 1 $energy) 3600 }}
+			{{ end }}
+		{{ end }}
+	{{ end }}
+{{ end }}
 
 {{/*SHOP*/}}
 {{if and (eq .Channel.ID 586604034228617236)}}
