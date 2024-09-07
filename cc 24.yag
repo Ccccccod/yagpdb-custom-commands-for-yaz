@@ -53,33 +53,6 @@
 {{end}}
 {{end}}
 
-{{/*💗COOL CMD💗*/}}
-{{$db := dbGet (toInt64 $id) "cmd"}}
-{{if $db}}
-{{$cmd := index (split (toString $db.Value) "==") 0}}
-{{$datamsg := toInt (index (split $db.Value "==") 1)}}
-{{/*CANCEL*/}}
-{{if eq (lower .Message.Content) "cancel"}}
-{{dbDel (toInt64 $id) "cmd"}}
-{{sendMessage nil "Canceled command!"}}
-{{/*DIEPLINK_ADDITIONAL*/}}
-{{else if eq $cmd "dieplink_additional"}}
-{{$msg := $datamsg}}
-{{$embed := index (getMessage nil $msg).Embeds 0}}
-{{$msg = sendMessageRetID 529144661810479104 (cembed "description" .Message.Content "color" 16711782 "author" (sdict "name" .User.String "icon_url" $avatar) "fields" (cslice (sdict "name" "Link" "value" (index $embed.Fields 0).Value "inline" true) (sdict "name" "Gamemode" "value" (index $embed.Fields 1).Value "inline" true) (sdict "name" "Server Location" "value" (index $embed.Fields 2).Value "inline" true)) "footer" (sdict "text" (joinStr "" "ID: " .User.ID)) "timestamp" currentTime)}}
-{{.User.Mention}}, Your link has been posted
-{{deleteMessage 529144661810479104 $msg 18000}}
-{{dbDel (toInt64 $id) "cmd"}}
-{{end}}
-{{end}}
-
-{{/*DIEP LINK*/}}
-{{if eq .Channel.ID 529144661810479104}}
-{{if not (reFind "(\\`\\`\\`|)(https:\\/\\/|)diep\\.io\\/#\\w{18,22}\\s?\\|\\s?(?i)([24]\\s?(TDM|teams?)|Domination|Sandbox)\\s?\\|\\s?(miami|la|los angeles|amsterdam|eu|singapore|sg|sydney|syd)(\\s?\\|[\\s\\S]*)?(?-i)" .Message.Content)}}
-{{$id := sendMessageRetID nil (joinStr "" "<@" .User.ID ">your link isn't posted in the correct format. Use `?dieplink` Command In <#529157952326598676> To Post Diep Links Easier")}} {{deleteMessage nil $id 10}} {{deleteMessage nil .Message.ID 18000}}
-{{end}}
-{{end}}
-
 {{/*SHOP*/}}
 {{if and (eq .Channel.ID 586604034228617236)}}
 {{if eq (getMessage 631814483181830144 654303631390277652).Content "0"}}{{editMessage 631814483181830144 654303631390277652 "1"}}{{end}}
