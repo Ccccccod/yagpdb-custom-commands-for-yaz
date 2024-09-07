@@ -113,12 +113,6 @@
 {{editMessage 631814483181830144 663319542810017871 "0"}}
 {{end}}{{end}}
 
-{{/*Q AND WINNER*/}}
-{{if eq .Channel.ID 661021114650329088}}
-{{if reFind "^question #?\\d+: [^<]" (lower .Message.Content)}}
-{{sendMessage 661021142676537364 .Message.Content}}
-{{end}}{{end}}
-
 {{/*COUNTING*/}}{{if eq .Channel.ID 530530014761058304}}
 {{if reFind "^!" .Message.Content}}
 {{deleteTrigger 15}}
