@@ -1,0 +1,30 @@
+{{/* Consts */}}
+{{ $EXPIRE_SEC := 60 }}
+{{ $ENERGY_LIMIT := 20 }}
+{{ $STAR_NAME := "Star" }}
+{{ $STAR_IMG := "https://media.discordapp.net/attachments/717791883405033575/1281960752529539092/stars.png?ex=66dd9e7d&is=66dc4cfd&hm=a2ab8bb11e28e79591e96528941e45692bf07e246d46697dd880de3340678b86" }}
+
+{{ $starsFalling := dbGet 0 "starsFalling" }}
+{{ if not $starsFalling }}
+    {{ dbSetExpire $id64 "starActiveUsers" true $EXPIRE_SEC }}
+    {{ if ne $idStr (toString (dbGet 0 "starPreviousUserID")) }}
+        {{ dbSetExpire 0 "starPreviousUserID" $idStr 3600 }}
+        {{ $energy := (dbGet 0 "starEnergy").Value }}
+        {{ if gt (toInt $energy) $ENERGY_LIMIT }}
+            {{ $activeUsers := dbCount "starActiveUsers" }}
+            {{ $chance := toInt (min (sub 75 (mult 2 $activeUsers)) 59) }}
+            {{ if and (eq (randInt $chance) 0) (ne $activeUsers 0) }}
+                {{/* STARS FALL */}}
+                {{ $stars := (add 1 (randInt 1) (randInt (mult 9 $activeUsers))) }}
+                {{ dbSetExpire 0 "starsFalling" $stars 300 }}
+                {{ dbDel 0 "starEnergy" }}
+                {{ $button := cbutton "label" "Catch Stars" "custom_id" "star-take" "style" "primary" }}
+                {{ $embed := cembed "title" (printf "⭐ %d stars are falling from the sky! Tap the button to catch them before they disappear!" $stars) "color" 16776960 "image" (sdict "url" $STAR_IMG) }}
+                {{ $msgId := sendMessageRetID nil (complexMessage "buttons" $button "embed" $embed) }}
+                {{ dbSetExpire 0 "starMsgID" (toString $msgId) 300 }}
+            {{ end }}
+        {{ else }}
+            {{ dbSetExpire 0 "starEnergy" (add 1 $energy) 3600 }}
+        {{ end }}
+    {{ end }}
+{{ end }}
