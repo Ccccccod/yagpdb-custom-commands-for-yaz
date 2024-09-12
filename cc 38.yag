@@ -1,4 +1,5 @@
 {{/* Consts */}}
+{{$id := .User.ID}}{{$id64 := toInt64 $id}}{{$idStr := toString $id}}{{$avatar := joinStr "" "https://cdn.discordapp.com/avatars/" (toString .User.ID) "/" .User.Avatar ".png"}}
 {{ $EXPIRE_SEC := 60 }}
 {{ $ENERGY_LIMIT := 20 }}
 {{ $STAR_NAME := "Star" }}
