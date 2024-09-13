@@ -1,0 +1,45 @@
+{{/* Var/const */}}
+{{ $id := .User.ID }}{{ $id64 := toInt64 $id }}
+{{ $EMOTES := cslice "<:yazcoin:561321461877309450>" "🍒" "🍋" "🍊" "🔔" "🍇" "💎" "7️⃣" "🃏" "💰" }}
+
+{{ $args := parseArgs 1 "" (carg "string" "slot/spin") }}
+{{ $cmd := lower (index .Args 1) }}
+
+{{ if (in (cslice "slot" "spin") $cmd) }}
+	{{ $emotes := cslice }}
+	{{ range 9 }}
+		{{- $emotes = $emotes.Append (index $EMOTES (randInt (len $EMOTES))) -}}
+	{{ end }}
+	{{ $desc := printf "**%s's 🍒 SLOTS MACHINE🍒!**\n%s │ %s │ %s\n%s │ %s │ %s ⬅\n%s │ %s │ %s\n-# *⚠Slot machine is still being developed, more features are coming. This machine expires <t:%d:R>*"
+		.User.Mention
+		(index $emotes 0) (index $emotes 1) (index $emotes 2) (index $emotes 3) (index $emotes 4) (index $emotes 5) (index $emotes 6) (index $emotes 7) (index $emotes 8)
+		(currentTime.Add .TimeHour).Unix }}
+	{{ $embed := cembed
+		"color" 16766720
+		"description" $desc
+		"footer" (sdict
+			"icon_url" (.User.AvatarURL "4096")
+			"text" (printf "UserID: %d" $id) )
+		"timestamp" currentTime }}
+		{{/* "author" (sdict
+			"name" .Member.Nick
+			"icon_url" (.User.AvatarURL "4096") )
+		"title" "🍒Slot machine 🍒" */}}
+	{{ $buttons := cslice
+		(cbutton
+			"label" "Spin Top" )
+		(cbutton
+			"label" "Spin Mid" )
+		(cbutton
+			"label" "Spin Bot" )
+		(cbutton
+			"emoji" ( sdict "name" "🦆" )
+			"label" "Tutorial"
+			"style" "link"
+			"url" "https://www.google.com/") }}
+	{{ $msg := complexMessage
+		"embed" $embed
+		"buttons" $buttons }}
+	{{ $msgId := sendMessageNoEscapeRetID nil $msg }}
+	
+{{ end }}
