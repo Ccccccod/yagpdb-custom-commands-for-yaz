@@ -76,13 +76,14 @@
 {{end}}*/}}
 
 {{/*SERVER STATS*/}}
-{{if not (in (cslice 529181822110662656 595033724954083342 655212361770336258 670517075923566593) (getChannel (toInt .Channel.ID)).ParentID)}}
-{{$cn64 := toInt64 .Channel.ID}}
-{{$key := "message count"}}
-{{$db := dbGet $cn64 $key}}
-{{if not $db}}
-{{dbSet $cn64 $key 1}}
-{{else}}
-{{$x := dbIncr $cn64 $key 1}}
-{{end}}
+{{ $blackList := cslice 529181822110662656 595033724954083342 655212361770336258 670517075923566593 }}
+	{{ if and (not (in $blackList (getChannelOrThread .Channel.ID).ParentID)) (not (in $blackList (getChannelOrThread (getChannelOrThread .Channel.ID).ParentID).ParentID)) }}
+	{{$cn64 := toInt64 .Channel.ID}}
+	{{$key := "message count"}}
+	{{$db := dbGet $cn64 $key}}
+	{{if not $db}}
+		{{dbSetExpire $cn64 $key 1 86400}}
+	{{else}}
+		{{$x := dbIncr $cn64 $key 1}}
+	{{end}}
 {{end}}
