@@ -15,8 +15,8 @@
 	{{ dbDel 0 "starMsgID" }}
 {{ else }}
 	{{/* Fail msg */}}
-	{{ $msg := complexMessage
+	{{/* {{ $msg := complexMessage
 		"content" (printf "Oh no! 😔 %s missed catching the stars this time. 🌟 Don't worry, there will be more chances soon. Stay tuned and keep your eyes on the skies! 🌠" .User.Mention)
 		"ephemeral" true }}
-	{{ sendResponseNoEscape nil $msg }}
+	{{ sendResponseNoEscape nil $msg }} */}}
 {{ end }}
