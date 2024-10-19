@@ -2,17 +2,15 @@
 {{$col := 16711782}}{{$pos := 0}}{{$r := .Member.Roles}}{{range .Guild.Roles}}{{if and (in $r .ID) (.Color) (lt $pos .Position)}}{{$pos = .Position}}{{$col = .Color}}{{end}}{{end}}
 {{$avatar := .User.AvatarURL "4096"}}
 
-{{$o := parseArgs 1 "" (carg "string" "starboard")}}
-{{$command := lower (index .Args 1)}}
-
+{{$o := parseArgs 1 "" (carg "string" "starboard / fixPollIcon")}}
+{{$cmd := lower (index .Args 1)}}
 
 {{/*Variables*/}}
 {{$now := currentTime}}
 {{$log := false}}
 {{$logChannel := 668368782476967954}}
 
-
-{{if in (cslice "starboard" "sb") $command}}
+{{if eq $cmd "starboard" "sb"}}
 {{$starboard := 712247669568831508}}
 {{$args := parseArgs 1 "" (carg "string" "starboard | sb") (carg "int" "messageID")}}
 {{$message := getMessage $starboard ($args.Get 1)}}
@@ -43,10 +41,37 @@
 	{{.User.Mention}} Unknown message. If you don't know how to copy message's id, say `,id message`
 {{end}}
 
+{{else if eq $cmd "poll" "polls" "fixpollicon"}}
+	{{ $args := parseArgs 3 "" (carg "string" "fixPollIcon / poll / polls") (carg "int" "messageID") (carg "string" "icon_url") }}
+	{{ $polls := 575494044864479262 }}
+	{{ $unknown := print .User.Mention "Unknown/Invalid poll. You may ask CoD how to use this command😉!" }}
+	{{ with getMessage $polls ($args.Get 1) }}
+		{{ with .Embeds }}
+			{{ with index . 0 }}
+				{{ $embed := structToSdict . }}
+				{{ if $embed.Footer.Text }}
+					{{ if reFind "User ID: \\d+" $embed.Footer.Text }}
+						{{/* Fix poll icons */}}
+						{{ $embed.Set "author" (sdict "name" $embed.Author.Name "icon_url" ($args.Get 2)) }}
+						{{ $embed.Set "thumbnail" (sdict "url" ($args.Get 2)) }}
+						{{ editMessage $polls ($args.Get 1) (cembed $embed) }}
+						{{ addReactions "✅" }}
+					{{ else }}
+						{{ $unknown }}
+					{{ end }}
+				{{ else }}
+					{{ $unknown }}
+				{{ end }}
+			{{ end }}
+		{{ else }}
+			{{ $unknown }}
+		{{ end }}
+	{{ else }}
+		{{ $unknown }}
+	{{ end }}
 
 {{else if false}}
 {{end}}
-
 
 {{if $log}}
 	{{sendMessage $logChannel (cembed $log)}}
