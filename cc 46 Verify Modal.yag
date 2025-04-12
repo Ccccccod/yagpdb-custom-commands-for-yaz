@@ -1,0 +1,41 @@
+{{/* Var/const */}}
+{{ $id := .User.ID }}
+{{ $id64 := toInt64 $id }}
+{{ $key := "verify" }}
+{{/* {{ $logChannelID := 568917434581647360 }} */}}
+{{ $logChannelID := 530912139481972757 }}
+{{ $unverified := 545436740089806852 }}
+{{ $being := 670836200054980618 }}
+{{ $mania := 529155155103580191 }}
+{{ $avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" (toString $id) "/" .User.Avatar ".png") }}
+
+{{/* On modal submission */}}
+{{ if eq .CustomID "verify-submit" }}
+	{{ with dbGet $id64 $key }}
+		{{ sendResponse $.Interaction.Token (complexMessage "ephemeral" true "content" "✅") }}
+		{{ takeRoleID $id $being }}
+		{{ takeRoleID $id $unverified }}
+		{{ giveRoleID $id $mania }}
+		{{ dbDel $id $key }}
+		{{ $fields := cslice
+			(sdict "name" "Question 1" "value" (title .Value.Q1) "inline" true)
+			(sdict "name" "Question 2" "value" (title .Value.Q2) "inline" true)
+			(sdict "name" "Question 3" "value" (title .Value.Q3) "inline" true) }}
+		{{ if eq .Value.Q1 "other" }}
+			{{ $value := index $.Values 0 }}
+			{{ $fields = $fields.Append (sdict "name" "Question 1 additional" "value" $value "inline" true) }}
+		{{ end }}
+		{{ if ne .Value.Q3 "no" }}
+			{{ $value := index $.Values (sub (len $.Values) 1) }}
+			{{ $fields = $fields.Append (sdict "name" "Friends" "value" $value "inline" true) }}
+		{{ end }}
+		{{ $fields = $fields.Append (sdict "name" "Locale" "value" $.Interaction.Locale "inline" true) }}
+		{{ sendMessage $logChannelID (cembed
+			"color" 0x66BB6A
+			"author" (sdict "name" $.User.String "icon_url" $avatar)
+			"description" (print .User.Mention "'s been verified by Interactions.")
+			"fields" $fields
+			"footer" (sdict "text" (joinStr "" "User ID: " $id))
+			"timestamp" currentTime)}}
+	{{ end }}
+{{ end }}

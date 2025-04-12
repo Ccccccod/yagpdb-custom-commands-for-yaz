@@ -1,0 +1,148 @@
+{{/* Var/const */}}
+{{ $id := .User.ID }}
+{{ $id64 := toInt64 $id }}
+{{ $key := "verify" }}
+{{ $logChannelID := 568917434581647360 }}
+{{/* {{ $logChannelID := 530912139481972757 }} */}}
+{{ $unverified := 545436740089806852 }}
+{{ $being := 670836200054980618 }}
+{{ $mania := 529155155103580191 }}
+{{ $bot := 838161217637056532 }}
+{{ $avatar := (joinStr "" "https://cdn.discordapp.com/avatars/" (toString $id) "/" .User.Avatar ".png") }}
+
+{{/* Process language from db, using default language if user's language not found */}}
+{{ $dbLanguage := (dbGet 0 "language").Value }}
+{{ $userLanguage := lower (slice (toString $.Interaction.Locale) 0 2) }}
+{{ $language := sdict }}
+{{ if ($dbLanguage.translations.HasKey $userLanguage) }}
+	{{/* Found user's language */}}
+	{{ range $k, $v := $dbLanguage.translations.Get $dbLanguage.settings.default_language }}
+		{{/* Can't find specific language msg, using default one */}}
+		{{ if (($dbLanguage.translations.Get $userLanguage).HasKey $k) }}
+			{{ $language.Set $k (($dbLanguage.translations.Get $userLanguage).Get $k) }}
+		{{ else }}
+			{{ $language.Set $k $v }}
+		{{ end }}
+	{{ end }}
+{{ else }}
+	{{/* Can't find user's language, so using default language */}}
+	{{ $language = $dbLanguage.translations.Get $dbLanguage.settings.default_language }}
+{{ end }}
+
+{{/* Ask verification questions */}}
+{{ if eq .CustomID "verify-init" }}
+	{{ $token := .Interaction.Token }}
+	{{ $menu := cmenu
+		"type" "text"
+		"placeholder" $language.how_heard
+		"custom_id" "verify-q1"
+		"options" (cslice
+			(sdict "label" $language.through_youtube "value" "youtube" "emoji" (sdict "id" "1124367780788056074" "name" "youtube"))
+			(sdict "label" $language.friend_invited "value" "friend")
+			(sdict "label" $language.re_joining "value" "rejoin")
+			(sdict "label" $language.other "value" "other"))
+		"max_values" 1 }}
+	{{ $menu1 := cmenu
+		"type" "text"
+		"placeholder" $language.subscribed_youtube
+		"custom_id" "verify-q2"
+		"options" (cslice
+			(sdict "label" $language.yes "value" "yes" "emoji" (sdict "name" "🥰"))
+			(sdict "label" $language.no "value" "no" "emoji" (sdict "name" "😢")))
+		"max_values" 1 }}
+	{{ $menu2 := cmenu
+		"type" "text"
+		"placeholder" $language.friends_in_server
+		"custom_id" "verify-q3"
+		"options" (cslice
+			(sdict "label" $language.yes "value" "yes" "emoji" (sdict "name" "✅"))
+			(sdict "label" $language.probably "value" "probably" "emoji" (sdict "name" "🤔"))
+			(sdict "label" $language.no "value" "no" "emoji" (sdict "name" "❌")))
+		"max_values" 1 }}
+	{{ $followupID := sendResponseRetID $token (complexMessage
+		"content" (printf "%s\n1. %s\n2. %s\n3. %s" (printf $language.welcome_message .User.Mention .Guild.MemberCount) $language.how_heard $language.subscribed_youtube $language.friends_in_server)
+		"ephemeral" true
+		"menus" (cslice $menu $menu1 $menu2)
+		"buttons" (cbutton "label" "Submit" "style" 3 "disabled" true)) }}
+	{{ $deadline := (add .Member.JoinedAt.Parse.Unix (mult 3 24 60 60)) }}
+	{{ $ttl := sub $deadline currentTime.Unix }}
+	{{ dbSetExpire $id64 $key (sdict
+		"Token" $token
+		"FollowupID" $followupID
+	) 120 }}
+
+{{/* On question answered */}}
+{{ else if eq .CustomID "verify-q1" "verify-q2" "verify-q3" }}
+	{{ with dbGet $id64 $key }}
+		{{ $db := sdict .Value }}
+		{{ $ttl := (sub .ExpiresAt.Unix currentTime.Unix) }}
+		{{ if eq $.CustomID "verify-q1" }}
+			{{ $db.Set "Q1" (index $.Values 0) }}
+		{{ else if eq $.CustomID "verify-q2" }}
+			{{ $db.Set "Q2" (index $.Values 0) }}
+		{{ else if eq $.CustomID "verify-q3" }}
+			{{ $db.Set "Q3" (index $.Values 0) }}
+		{{ end }}
+		{{ deleteInteractionResponse $.Interaction.Token (sendResponseRetID $.Interaction.Token (complexMessage "ephemeral" true "content" "\u200B✅")) 0 }}
+		{{ dbSetExpire $id64 $key $db $ttl }}
+		{{ if and $db.Q1 $db.Q2 $db.Q3 }}
+			{{/* All questions have been answered */}}
+			{{ $submitBtn := structToSdict (index (index $.Interaction.Message.Components 3).Components 0)}}
+			{{ $submitBtn.Set "custom_id" "verify-submit" }}
+			{{ $submitBtn.Set "disabled" false }}
+			{{ editResponse $db.Token $db.FollowupID (complexMessageEdit
+				"content" (printf $language.answers_saved $.User.Mention)
+				"buttons" (cbutton $submitBtn)
+			) }}
+		{{ end }}
+	{{ end }}
+
+{{/* On answers submission */}}
+{{ else if eq .CustomID "verify-submit" }}
+	{{ with dbGet $id64 $key }}
+		{{ if and (ne .Value.Q1 "other") (eq .Value.Q3 "no") }}
+			{{ sendResponse $.Interaction.Token (complexMessage "ephemeral" true "content" "✅") }}
+			{{ takeRoleID $id $being }}
+			{{ takeRoleID $id $unverified }}
+			{{ giveRoleID $id $mania }}
+			{{ dbDel $id $key }}
+			{{ sendMessage $logChannelID (cembed
+				"color" 6732650
+				"author" (sdict "name" $.User.String "icon_url" $avatar)
+				"description" (print .User.Mention "'s been verified by Interactions")
+				"fields" (cslice
+					(sdict "name" "Question 1" "value" (title .Value.Q1) "inline" true)
+					(sdict "name" "Question 2" "value" (title .Value.Q2) "inline" true)
+					(sdict "name" "Question 3" "value" (title .Value.Q3) "inline" true)
+					(sdict "name" "Locale" "value" $.Interaction.Locale "inline" true))
+				"footer" (sdict "text" (joinStr "" "User ID: " $id))
+				"timestamp" currentTime
+			)}}
+		{{ else }}
+			{{ $title := "Final Question" }}
+			{{ $fields := cslice }}
+			{{ if eq .Value.Q1 "other" }}
+				{{ $title = print $title "s" }}
+				{{ $fields = $fields.Append (sdict
+					"label" (slice $language.how_heard_brief 0 (toInt (min (len $language.how_heard_brief) 45)))
+					"placeholder" (slice $language.how_found 0 (toInt (min (len $language.how_found) 100)))
+					"max_length" 200
+					"style" 2
+					"required" true)}}
+			{{ end }}
+			{{ if ne .Value.Q3 "no" }}
+				{{ $fields = $fields.Append (sdict
+					"label" (slice $language.friends_label 0 (toInt (min (len $language.friends_label) 45)))
+					"placeholder" (slice $language.friends_usernames 0 (toInt (min (len $language.friends_usernames) 100)))
+					"max_length" 200
+					"style" 2
+					"required" true)}}
+			{{ end }}
+			{{ $modal := sdict
+				"title" $title
+				"custom_id" "verify-submit"
+				"fields" $fields }}
+			{{ sendModal $modal }}
+		{{ end }}
+	{{ end }}
+{{ end }}
