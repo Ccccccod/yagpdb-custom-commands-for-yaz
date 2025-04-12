@@ -60,7 +60,7 @@
 			(sdict "label" $language.no "value" "no" "emoji" (sdict "name" "❌")))
 		"max_values" 1 }}
 	{{ $followupID := sendResponseRetID $token (complexMessage
-		"content" (printf "%s\n1. %s\n2. %s\n3. %s" (printf $language.welcome_message .User.Mention .Guild.MemberCount) $language.how_heard $language.subscribed_youtube $language.friends_in_server)
+		"content" (printf "%s\n**1.** %s\n**2.** %s\n**3.** %s" (printf $language.welcome_message .User.Mention .Guild.MemberCount) $language.how_heard $language.subscribed_youtube $language.friends_in_server)
 		"ephemeral" true
 		"menus" (cslice $menu $menu1 $menu2)
 		"buttons" (cbutton "label" "Submit" "style" 3 "disabled" true)) }}
@@ -107,7 +107,7 @@
 			{{ giveRoleID $id $mania }}
 			{{ dbDel $id $key }}
 			{{ sendMessage $logChannelID (cembed
-				"color" 6732650
+				"color" 0x66BB6A
 				"author" (sdict "name" $.User.String "icon_url" $avatar)
 				"description" (print .User.Mention "'s been verified by Interactions")
 				"fields" (cslice
