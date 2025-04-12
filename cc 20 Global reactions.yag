@@ -74,40 +74,6 @@
 {{/*execCC 30 nil 0 (sdict .)*/}}
 {{end}}
 
-{{/*VERIFICATION*/}}
-{{if and (eq .Reaction.ChannelID 670518064235937823) .ReactionAdded}}
-{{if not (hasRoleID 529155155103580191)}}
-{{removeRoleID 545436740089806852 0}}
-{{addRoleID 670836200054980618}}
-{{$chn := 670187195079983104}}
-{{$msg := 670188746511089684}}
-{{if eq .Reaction.Emoji.Name "🇮🇳"}}{{$msg = 680171332180115485}}
-{{else if eq .Reaction.Emoji.Name "🇪🇸"}}{{$msg = 680170752519176287}}
-{{else if eq .Reaction.Emoji.Name "🇸🇦"}}{{$msg = 680170752519176287}}
-{{else if eq .Reaction.Emoji.Name "🇨🇵"}}{{$msg = 670523106510766090}}
-{{else if eq .Reaction.Emoji.Name "🇯🇵"}}{{$msg = 670533175528783884}}
-{{else if eq .Reaction.Emoji.Name "🇳🇱"}}{{$msg = 670523275599937576}}
-{{else if eq .Reaction.Emoji.Name "🇷🇺"}}{{$msg = 670947060874477568}}
-{{else if eq .Reaction.Emoji.Name "🇰🇷"}}{{$msg = 682449814780379172}}
-{{else if eq .Reaction.Emoji.Name "🇻🇳"}}{{$msg = 670188962152972298}}
-{{else if eq .Reaction.Emoji.Name "🇩🇪"}}{{$msg = 707809943901831190}}
-{{end}}
-{{$msg = index (split (getMessage $chn $msg).Content "||") 1}}
-{{$msg = reReplace "{\\.User\\.Mention}" $msg .User.Mention}}
-{{$number := toString .Guild.MemberCount}}
-{{$math := joinStr " " (randInt 100 1000) "x" (randInt 100 1000) "= ?"}}
-{{$db := dbGet (toInt64 $id) "verify"}}
-{{if $db}}
-	{{$db = sdict $db.Value}}
-	{{$number = toString $db.number}}
-	{{$math = joinStr " " $db.math1 "x" $db.math2 "= ?"}}
-{{end}}
-{{$msg = reReplace "{\\.Guild\\.MemberCount}" $msg $number}}
-{{/* $msg = joinStr "" $msg "\n\n**4. " $math "**" */}}
-{{sendMessage 545435207340392448 $msg}}
-{{execCC 7 670518064235937823 1200 (sdict "cmd" "role" "user" .Reaction.UserID "giverole" 545436740089806852 "takerole" 670836200054980618 "ifhas" 670836200054980618)}}
-{{end}}{{end}}
-
 {{/*STAFF VOTING*/}}
 {{if and (eq .Reaction.ChannelID 658893640038613002) .ReactionAdded}}
 {{/*👌👌*/}}
