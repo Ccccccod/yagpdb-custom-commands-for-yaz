@@ -99,11 +99,11 @@
 {{$db := dbGet (toInt64 $id) "verify"}}
 {{if $db}}
 	{{$db = sdict $db.Value}}
-	{{$number = $db.number}}
+	{{$number = toString $db.number}}
 	{{$math = joinStr " " $db.math1 "x" $db.math2 "= ?"}}
 {{end}}
 {{$msg = reReplace "{\\.Guild\\.MemberCount}" $msg $number}}
-{{$msg = joinStr "" $msg "\n\n**4. " $math "**"}}
+{{/* $msg = joinStr "" $msg "\n\n**4. " $math "**" */}}
 {{sendMessage 545435207340392448 $msg}}
 {{execCC 7 670518064235937823 1200 (sdict "cmd" "role" "user" .Reaction.UserID "giverole" 545436740089806852 "takerole" 670836200054980618 "ifhas" 670836200054980618)}}
 {{end}}{{end}}
