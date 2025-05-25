@@ -35,10 +35,12 @@
 	{{$d := toDuration (add 86400000000000 (mult $d -1)) }}
 	{{$d := div $d 1000000000}}
 	{{dbSetExpire (toInt64 $id) $key "cooldown" $d}}
-	{{$post := sendMessageNoEscapeRetID $song (joinStr "" "<@&826750518940139520>" .User.Mention " posted a song: " ($args.Get 1))}}
+	{{/* {{$post := sendMessageNoEscapeRetID $song (joinStr "" "<@&826750518940139520>" .User.Mention " posted a song: " ($args.Get 1))}} */}}
+	{{/* BotGhost */}}
+	{{ sendMessageNoEscape $song (printf "🔂%s%s" .User.Mention ($args.Get 1)) }}
 	{{deleteMessage $song (toInt (dbGet (toInt64 $id) "song_new day").Value)}}
 	{{execCC .CCID $song $d (sdict "time" $d)}}
-	{{addMessageReactions $song $post "👍" "👎" "aflameorred:748453315049816067"}}
+	{{/* {{addMessageReactions $song $post "👍" "👎" "aflameorred:748453315049816067"}} */}}
 	{{dbSetExpire (toInt64 $id) "song_last" (toString .User.ID) 604800}}
 	{{sendMessage $ccLog (print "<#" $song "> has been locked for " (humanizeDurationSeconds (toDuration (mult $d 1000000000))))}}
 {{end}}{{end}}
