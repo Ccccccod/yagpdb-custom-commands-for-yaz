@@ -30,8 +30,8 @@
 			(humanizeDurationSeconds (toDuration (mult .Guild.AfkTimeout .TimeSecond)))
 		}}
 	{{end}}
-	{{$embedsEnabled := "No"}}
-	{{if .Guild.EmbedEnabled}} {{$embedsEnabled = "Yes"}} {{end}}
+	{{$widgetEnabled := "No"}}
+	{{if .Guild.WidgetEnabled}} {{$widgetEnabled = "Yes"}} {{end}}
 	{{$createdAt := div .Guild.ID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add}}
 	
 	{{$infoEmbed := cembed
@@ -45,7 +45,7 @@
 			(sdict "name" "❯ Roles" "value" (printf "**• Total:** %d\nUse `-listroles` to list all roles." (len .Guild.Roles)))
 			(sdict "name" "❯ Owner" "value" (printf "%s (%d)" $owner.String $owner.ID))
 			(sdict "name" "❯ AFK" "value" $afk)
-			(sdict "name" "❯ Embeds Enabled" "value" $embedsEnabled)
+			(sdict "name" "❯ Embeds Enabled" "value" $widgetEnabled)
 		)
 		"footer" (sdict "text" "Created at")
 		"timestamp" $createdAt
@@ -114,7 +114,7 @@
 			{{- $s1 = print $s1 "\n<@&" .ID "> " .ID}}
 		{{- end}}
 	{{- end}}
-	{{sendMessage nil (cembebd
+	{{sendMessage nil (cembed
 		"fields" (cslice
 			(sdict "name" "Permanent Custom Roles:" "value" $s)
 			(sdict "name" "Temporary Custom Roles:" "value" $s1)
