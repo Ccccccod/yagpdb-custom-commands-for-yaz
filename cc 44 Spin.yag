@@ -1,0 +1,144 @@
+{{/* Var/const */}}
+{{ $id := .User.ID }}{{ $id64 := toInt64 $id }}{{ $proof := 644944241763549204 }}
+{{/* Common slot emojis: "💎" "🍒" "🍋" "🍊" "🔔" "🍇" "7️⃣" "🃏" "💰" */}}
+{{ $rb := ":rainbow_flag:" }}{{ $yazcoin := "<:yazcoin:561321461877309450>" }}
+{{ $jol := 1165566666948743238 }}
+{{ $EMOTES := cslice $yazcoin "⏲️"
+	"💣" "😴"
+	"🐈" "🐕" $rb "❔" }}{{/* The "❔" MUST be the last element */}}
+{{ $failMsgs := split "You No Win 😢, NO SOUP FOR YOU, Not this time, PWNED!, Riggity Riggity Wrecked!, Keep Trying!, Maybe Next Time!, Just one more..., Can't Stop Won't Stop!" ", "}}
+{{/* TODO {{ $tips := ""}} */}}
+
+{{if dbGet $id64 "cooldown"}}
+	{{/* Nothing */}}
+{{ else }}
+	{{ dbSetExpire $id64 "cooldown" "cooldown" 5 }}
+	{{ $in5s := print ":warning: You can spin again about **<t:" (add currentTime.Unix 5) ":R>**\n"}}
+	{{ $db := dbGet $id "slotMachine" }}
+	{{ $INVALID_SLOT_MSG := complexMessage
+		"content" (print .User.Mention "This Slot Machine has either expired or does not belong to you. To create a new one, use `=fun slot`")
+		"ephemeral" true }}
+	{{ if not $db }}
+		{{ sendResponse nil $INVALID_SLOT_MSG }}
+	{{ else }}
+		{{ $sm := sdict $db.Value }}
+		{{ if ne .Interaction.Message.ID $sm.MessageId }}
+			{{ $msg := getMessage $sm.ChannelID $sm.MessageID }}
+			{{ if $msg }}
+				{{ sendResponse nil (complexMessage
+					"content" (print .User.Mention "Please use your [current Slot Machine](" $sm.Url ", or create a new one with `=fun slot`" )
+					"ephemeral" true )}}
+			{{ else }}
+				{{ sendResponse nil $INVALID_SLOT_MSG }}
+				{{/* TODO allows creating a new Slot Machine */}}
+			{{ end }}
+		{{ else }}
+			{{/* Modify emotes */}}
+			{{ $hasJol := hasRoleID $jol }}
+			{{ if $hasJol }}
+				{{ $EMOTES = $EMOTES.AppendSlice (cslice "⬜" "⬜") }}
+			{{ else }}
+				{{ $EMOTES = $EMOTES.AppendSlice (cslice "🎃" "🎃" "🎃") }}
+			{{ end }}
+			{{/* SPIN */}}
+			{{ $emotes := cslice }}
+			{{ $expiresAtUnix := $db.ExpiresAt.Unix }}
+			{{ $buttons := cslice (cbutton
+				"label" "Spin"
+				"custom_id" "slot-spin" )}}
+			{{ range 9 }}
+				{{- $emotes = $emotes.Append (index $EMOTES (randInt (len $EMOTES))) -}}
+			{{ end }}
+			{{ $1 := index $emotes 3 }}{{ $2 := index $emotes 4 }}{{ $3 := index $emotes 5 }}
+			{{ $match := or (and (eq $1 $2) (eq $2 $3)) (and (eq $1 $rb) (eq $1 $2)) (and (eq $1 $rb) (eq $1 $3)) (and (eq $1 $rb) (eq $2 $3)) (and (eq $2 $rb) (eq $2 $1)) (and (eq $2 $rb) (eq $2 $3)) (and (eq $2 $rb) (eq $1 $3)) (and (eq $3 $rb) (eq $3 $1)) (and (eq $3 $rb) (eq $3 $2)) (and (eq $3 $rb) (eq $1 $2)) }}
+			{{ if eq $1 $rb }}{{ $1 = $2 }}{{ end }}
+			{{ if eq $1 $rb }}{{ $1 = $3 }}{{ end }}
+			{{/* Result */}}
+			{{ if $match }}
+				{{ if eq $1 "❔" }}{{ $1 = index $EMOTES (randInt (sub (len $EMOTES) 1)) }}{{ end }}
+				{{ $ephe := false }}
+				{{ if eq $1 $yazcoin}}
+					{{ sendMessageNoEscape $proof (print .User.Mention " earned 10000" $yazcoin " in [their Slot Machine](" $sm.Url "!") }}
+					{{ $match = print "You earned 10000" $yazcoin }}
+				{{ else if eq $1 "🎃" }}
+					{{ if $sm.Jol }}
+						{{ if (ge $sm.Jol 4) }}
+							{{ addRoleID $jol }}
+							{{ $match = print "Congratulations, you've earned the <@&" $jol "> role! This also boosts your chances of winning other items!" }}
+							{{ $sm.Set "Jol" (add 1 $sm.Jol) }}
+							{{ dbSetExpire $id64 "slotMachine" $sm (sub $expiresAtUnix currentTime.Unix) }}
+						{{ else }}
+							{{ $sm.Set "Jol" (add 1 $sm.Jol) }}
+							{{ $match = print "You earned a 🎃!" }}
+							{{ dbSetExpire $id64 "slotMachine" $sm (sub $expiresAtUnix currentTime.Unix) }}
+						{{ end }}
+					{{ else }}
+						{{ $sm.Set "Jol" 1 }}
+						{{ $match = print "You earned a 🎃" }}
+						{{ dbSetExpire $id64 "slotMachine" $sm (sub $expiresAtUnix currentTime.Unix) }}
+					{{ end }}
+				{{ else if eq $1 "⏲️" }}
+					{{ $match = "Your Slot Machine got 15 more minutes to live" }}
+					{{ $expiresAtUnix = add $expiresAtUnix 900 }}
+					{{ dbSetExpire $id64 "slotMachine" $sm (sub $expiresAtUnix currentTime.Unix) }}
+				{{ else if eq $1 "🐈" }}
+					{{ $match = exec "CatFact" }}
+					{{ $ephe = true }}
+				{{ else if eq $1 "🐕" }}
+					{{ $match = exec "DogFact" }}
+					{{ $ephe = true }}
+				{{ else if eq $1 "⬜" }}
+					{{ $match = "You got the void" }}
+					{{ $ephe = true }}
+				{{ else if eq $1 $rb}}
+					{{ $match = print "The 3 " $rb " are confused" }}
+				{{ else if eq $1 "😴" }}
+					{{ $match = print "😴You took a nap and are now in dreamland! You get up <t:" (add currentTime.Unix 180) ":R>" }}
+					{{ $in5s = "" }}
+					{{ dbSetExpire $id64 "cooldown" "cooldown" 180 }}
+				{{ else if eq $1 "💣" }}
+					{{ $match = "💥BOOM! Your Slot Machine explodes" }}
+					{{ $in5s = "" }}
+					{{ $expiresAtUnix = currentTime.Unix }}
+					{{ $buttons = cbutton "label" "Spin" "disabled" true }}
+					{{ dbDel $id64 "slotMachine" }}
+				{{ else }}
+					{{ $match = "Feature for this emojis hasn't been implemented. <@471677056766312448>, Please implement it!" }}
+				{{ end }}
+				{{ sendResponse nil (complexMessage
+					"allowed_mentions" (sdict "parse" (cslice "users"))
+					"content" (print .User.Mention " got " $1 " in Slot Machine!\n" $match)
+					"ephemeral" $ephe
+				) }}
+			{{ else }}
+				{{ sendResponse nil "" }}
+				{{ $match = index $failMsgs (randInt (len $failMsgs)) }}
+			{{ end }}
+			{{ $jolCount := "" }}
+			{{ if $sm.Jol }}
+				{{ $jolCount = print $sm.Jol "/5🎃\n" }}
+			{{ end }}
+			{{ $desc := print "**————————**\n"
+				(index $emotes 0) "⠀⠀" (index $emotes 1) "⠀⠀" (index $emotes 2) "\n"
+				(index $emotes 3) "⠀⠀" (index $emotes 4) "⠀⠀" (index $emotes 5) "⠀⬅\n"
+				(index $emotes 6) "⠀⠀" (index $emotes 7) "⠀⠀" (index $emotes 8) "\n"
+				"**————————**\n"
+				$match "\n"
+				$jolCount
+				$in5s
+				"-# *:warning:Slot machine is still being developed, more features are coming. This machine expires <t:" $expiresAtUnix ":R>*"}}
+			{{ $embed := cembed
+				"color" 16766720
+				"description" $desc
+				"footer" (sdict
+					"icon_url" (.User.AvatarURL "4096")
+					"text" (printf "UserID: %d" $id) )
+				"timestamp" currentTime }}
+			{{/* TODO must think to click Spin */}}
+			{{ $msg := complexMessageEdit
+				"embed" $embed
+				"buttons" $buttons }}
+			{{ editMessage nil .Interaction.Message.ID $msg }}
+		{{ end }}
+	{{ end }}
+{{ end }}
