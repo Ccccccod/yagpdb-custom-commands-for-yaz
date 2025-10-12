@@ -43,9 +43,9 @@
 			{{/* SPIN */}}
 			{{ $emotes := cslice }}
 			{{ $expiresAtUnix := $db.ExpiresAt.Unix }}
-			{{ $buttons := cslice (cbutton
+			{{ $spinBtn := cbutton
 				"label" "Spin"
-				"custom_id" "slot-spin" )}}
+				"custom_id" "slot-spin" }}
 			{{ range 9 }}
 				{{- $emotes = $emotes.Append (index $EMOTES (randInt (len $EMOTES))) -}}
 			{{ end }}
@@ -100,7 +100,7 @@
 					{{ $match = "💥BOOM! Your Slot Machine explodes" }}
 					{{ $in5s = "" }}
 					{{ $expiresAtUnix = currentTime.Unix }}
-					{{ $buttons = cbutton "label" "Spin" "disabled" true }}
+					{{ $spinBtn = cbutton "label" "Spin" "disabled" true }}
 					{{ dbDel $id64 "slotMachine" }}
 				{{ else }}
 					{{ $match = "Feature for this emojis hasn't been implemented. <@471677056766312448>, Please implement it!" }}
@@ -118,27 +118,37 @@
 			{{ if $sm.Jol }}
 				{{ $jolCount = print $sm.Jol "/5🎃\n" }}
 			{{ end }}
-			{{ $desc := print "**————————**\n"
-				(index $emotes 0) "⠀⠀" (index $emotes 1) "⠀⠀" (index $emotes 2) "\n"
-				(index $emotes 3) "⠀⠀" (index $emotes 4) "⠀⠀" (index $emotes 5) "⠀⬅\n"
-				(index $emotes 6) "⠀⠀" (index $emotes 7) "⠀⠀" (index $emotes 8) "\n"
-				"**————————**\n"
-				$match "\n"
-				$jolCount
-				$in5s
-				"-# *:warning:Slot machine is still being developed, more features are coming. This machine expires <t:" $expiresAtUnix ":R>*"}}
-			{{ $embed := cembed
-				"color" 16766720
-				"description" $desc
-				"footer" (sdict
-					"icon_url" (.User.AvatarURL "4096")
-					"text" (printf "UserID: %d" $id) )
-				"timestamp" currentTime }}
 			{{/* TODO must think to click Spin */}}
-			{{ $msg := complexMessageEdit
-				"embed" $embed
-				"buttons" $buttons }}
-			{{ editMessage nil .Interaction.Message.ID $msg }}
+			{{ $userSec := sdict
+				"text" (print "<@" $id ">**'s 🍒SLOTS MACHINE🍒!**\n"
+					"-# UserID: " $id " • <t:" currentTime.Unix ":f>\n"
+					"-# *:warning: Slot machine is still being developed, more features are coming. This machine expires <t:" $expiresAtUnix ":R>*")
+				"thumbnail" (sdict
+					"media" (.User.AvatarURL "4096")
+					"description" "Member's avatar"
+				)
+			}}
+			{{ $slotSec := sdict
+				"text" (print
+					(index $emotes 0) "⠀⠀" (index $emotes 1) "⠀⠀" (index $emotes 2) "\n"
+					(index $emotes 3) "⠀⠀" (index $emotes 4) "⠀⠀" (index $emotes 5) "⠀⬅\n"
+					(index $emotes 6) "⠀⠀" (index $emotes 7) "⠀⠀" (index $emotes 8))
+				"button" $spinBtn
+			}}
+			{{ $text := print $match "\n" $jolCount $in5s}}
+			{{ $comp := componentBuilder
+				"container" (sdict
+					"color" 0xFFD700
+					"components" (componentBuilder
+						"section" $userSec
+						"separator" false
+						"section" $slotSec
+						"separator" false
+						"text" $text
+					)
+				)
+			}}
+			{{ editMessage nil .Interaction.Message.ID $comp }}
 		{{ end }}
 	{{ end }}
 {{ end }}
