@@ -1,11 +1,11 @@
-{{if .ExecData}}
-	{{try}}
-		{{if not (or (targetHasRoleID .ExecData.ID 529155155103580191) (targetHasRoleID .ExecData.ID 838161217637056532))}}
-			{{exec "Kick" (toString .ExecData.ID) "Did not answer verification questions."}}
-			{{/*sendMessageNoEscape 532035388538093570 (joinStr "" "<@" .ExecData.ID "> has been kicked for: Did not answer verification questions.") */}}
-		{{end}}
-	{{catch}}
-		{{sendMessage nil .Error}}
-	{{end}}
-{{else}}
-{{end}}
+{{ if .ExecData }}
+	{{ try }}
+		{{ if not (or (targetHasRoleID .ExecData.ID 529155155103580191) (targetHasRoleID .ExecData.ID 838161217637056532)) }}
+			{{ execAdmin "Kick" (toString .ExecData.ID) "Did not answer verification questions." }}
+			{{/* sendMessageNoEscape 532035388538093570 (joinStr "" "<@" .ExecData.ID "> has been kicked for: Did not answer verification questions.") */}}
+		{{ end }}
+	{{ catch }}
+		{{ sendMessage nil (printf "Custom command #%d:\n%s" .CCID .Error) }}
+	{{ end }}
+{{ else }}
+{{ end }}
