@@ -5,7 +5,7 @@
 			{{/* sendMessageNoEscape 532035388538093570 (joinStr "" "<@" .ExecData.ID "> has been kicked for: Did not answer verification questions.") */}}
 		{{ end }}
 	{{ catch }}
-		{{ sendMessage nil (printf "Custom command #%d:\n%s" .CCID .Error) }}
+		{{ sendMessage nil (printf "Custom command #%d:\n%s" $.CCID .Error) }}
 	{{ end }}
 {{ else }}
 {{ end }}
