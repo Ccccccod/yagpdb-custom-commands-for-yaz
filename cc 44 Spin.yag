@@ -35,10 +35,10 @@
 		{{ else }}
 			{{/* Modify emotes */}}
 			{{ $hasJol := hasRoleID $jol }}
-			{{ if $hasJol }}
-				{{ $EMOTES = $EMOTES.AppendSlice (cslice "⬜" "⬜") }}
-			{{ else }}
+			{{ if (and (not $hasJol) (eq currentTime.Month 10)) }}
 				{{ $EMOTES = $EMOTES.AppendSlice (cslice "🎃" "🎃" "🎃") }}
+			{{ else }}
+				{{ $EMOTES = $EMOTES.AppendSlice (cslice "⬜" "⬜") }}
 			{{ end }}
 			{{/* SPIN */}}
 			{{ $emotes := cslice }}
