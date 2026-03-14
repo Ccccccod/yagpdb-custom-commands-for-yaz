@@ -111,7 +111,6 @@
 					"ephemeral" $ephe
 				) }}
 			{{ else }}
-				{{ sendResponse nil "" }}
 				{{ $match = index $failMsgs (randInt (len $failMsgs)) }}
 			{{ end }}
 			{{ $jolCount := "" }}
@@ -148,7 +147,7 @@
 					)
 				)
 			}}
-			{{ editMessage nil .Interaction.Message.ID $comp }}
+			{{ updateMessage $comp }}
 		{{ end }}
 	{{ end }}
 {{ end }}
