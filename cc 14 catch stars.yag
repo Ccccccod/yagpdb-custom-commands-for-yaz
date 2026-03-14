@@ -7,8 +7,6 @@
 	{{ $button := cbutton "label" "Catch Stars" "style" "primary" "disabled" true }}
 	{{ $msg := complexMessageEdit "content" (printf "Congratulations! 🎉 %s caught the %d stars! 🌟 They're all yours!" .User.Mention $stars) "buttons" $button }}
 	{{ editMessageNoEscape nil $msgID $msg }}
-	{{/* Remove "Interaction failed" */}}
-	{{ sendResponse nil "" }}
 	{{/* deleteMessage nil $msgID 8 */}}
 	{{ dbDel 0 "starsFalling" }}
 	{{ dbIncr $id64 "star" $stars }}
