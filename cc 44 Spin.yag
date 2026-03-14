@@ -105,7 +105,7 @@
 				{{ else }}
 					{{ $match = "Feature for this emojis hasn't been implemented. <@471677056766312448>, Please implement it!" }}
 				{{ end }}
-				{{ sendResponse nil (complexMessage
+				{{ sendMessage nil (complexMessage
 					"allowed_mentions" (sdict "parse" (cslice "users"))
 					"content" (print .User.Mention " got " $1 " in Slot Machine!\n" $match)
 					"ephemeral" $ephe
