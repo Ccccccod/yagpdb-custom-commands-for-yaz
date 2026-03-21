@@ -50,9 +50,12 @@
 {{range .Message.Mentions}}{{$s = joinStr "" $s .Mention}}{{end}}
 {{$link := joinStr "" "https://discordapp.com/channels/" .Guild.ID "/" .Message.ChannelID "/" .Message.ID}}
 {{$description := (joinStr "" "**User: <@" .User.ID ">\nMentions: " (joinStr " " $s) "\nChannel: <#" .Message.ChannelID ">**\n[Message Link](" $link ")")}}
-{{$embed := sdict "author" (sdict "name" .User.String "icon_url" $avatar) "color" 4645612 "description" $description "fields" (cslice (sdict "name" "Content" "value" .Message.Content "inline" true)) "footer" (sdict "text" (joinStr "" "Message ID: " .Message.ID)) "timestamp" currentTime}}
+{{$embed := sdict "author" (sdict "name" .User.String "icon_url" $avatar) "color" 4645612 "description" $description "footer" (sdict "text" (joinStr "" "Message ID: " .Message.ID)) "timestamp" currentTime}}
+{{if .Message.Content}}
+	{{$embed.Set "fields" (cslice (sdict "name" "Content" "value" .Message.Content "inline" true)) }}
+{{end}}
 {{if .Message.Attachments}}
-{{$embed.Set "image" (sdict "url" (index .Message.Attachments 0).URL) }}
+	{{$embed.Set "image" (sdict "url" (index .Message.Attachments 0).URL) }}
 {{end}}
 {{sendMessage 650684174453309449 (cembed $embed)}}
 {{end}}
