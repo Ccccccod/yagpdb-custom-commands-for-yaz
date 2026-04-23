@@ -11,7 +11,7 @@
 	{{ dbDel 0 "starsFalling" }}
 	{{ $newStars := toInt (dbIncr $id64 "star" $stars) }}
 	{{ dbDel 0 "starMsgID" }}
-	{{ sendResponse nil (complexMessage "content" (printf "%s, You now have %d stars." .User.Mention $newStars) "ephemeral" true) }}
+	{{ sendResponse nil (complexMessage "content" (printf "%s, You now have %d stars. 🌟" .User.Mention $newStars) "ephemeral" true) }}
 {{ else }}
 	{{/* Fail msg */}}
 	{{/* {{ $msg := complexMessage
