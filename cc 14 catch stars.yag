@@ -9,8 +9,9 @@
 	{{ editMessageNoEscape nil $msgID $msg }}
 	{{/* deleteMessage nil $msgID 8 */}}
 	{{ dbDel 0 "starsFalling" }}
-	{{ dbIncr $id64 "star" $stars }}
+	{{ $newStars := toInt (dbIncr $id64 "star" $stars) }}
 	{{ dbDel 0 "starMsgID" }}
+	{{ sendResponse nil (complexMessage "content" (printf "%s, You now have %d stars." .User.Mention $newStars) "ephemeral" true) }}
 {{ else }}
 	{{/* Fail msg */}}
 	{{/* {{ $msg := complexMessage
