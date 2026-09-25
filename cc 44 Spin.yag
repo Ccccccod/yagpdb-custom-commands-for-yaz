@@ -53,6 +53,7 @@
 			{{ $match := or (and (eq $1 $2) (eq $2 $3)) (and (eq $1 $rb) (eq $1 $2)) (and (eq $1 $rb) (eq $1 $3)) (and (eq $1 $rb) (eq $2 $3)) (and (eq $2 $rb) (eq $2 $1)) (and (eq $2 $rb) (eq $2 $3)) (and (eq $2 $rb) (eq $1 $3)) (and (eq $3 $rb) (eq $3 $1)) (and (eq $3 $rb) (eq $3 $2)) (and (eq $3 $rb) (eq $1 $2)) }}
 			{{ if eq $1 $rb }}{{ $1 = $2 }}{{ end }}
 			{{ if eq $1 $rb }}{{ $1 = $3 }}{{ end }}
+			{{ $response := false }}
 			{{/* Result */}}
 			{{ if $match }}
 				{{ if eq $1 "❔" }}{{ $1 = index $EMOTES (randInt (sub (len $EMOTES) 1)) }}{{ end }}
@@ -105,11 +106,11 @@
 				{{ else }}
 					{{ $match = print "Feature for this emojis hasn't been implemented. <@471677056766312448>, Please implement " $1 "!" }}
 				{{ end }}
-				{{ sendMessage nil (complexMessage
+				{{ $response = complexMessage
 					"allowed_mentions" (sdict "parse" (cslice "users"))
 					"content" (print .User.Mention " got " $1 " in Slot Machine!\n" $match)
 					"ephemeral" $ephe
-				) }}
+				}}
 			{{ else }}
 				{{ $match = index $failMsgs (randInt (len $failMsgs)) }}
 			{{ end }}
@@ -147,7 +148,11 @@
 					)
 				)
 			}}
+			{{/* {{ editMessage nil .Interaction.Message.ID $comp }} */}}
 			{{ updateMessage $comp }}
+			{{ if $response }}
+				{{ sendResponse nil $response }}
+			{{ end }}
 		{{ end }}
 	{{ end }}
 {{ end }}
