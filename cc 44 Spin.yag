@@ -103,7 +103,7 @@
 					{{ $spinBtn = cbutton "label" "Spin" "disabled" true }}
 					{{ dbDel $id64 "slotMachine" }}
 				{{ else }}
-					{{ $match = "Feature for this emojis hasn't been implemented. <@471677056766312448>, Please implement it!" }}
+					{{ $match = print "Feature for this emojis hasn't been implemented. <@471677056766312448>, Please implement " $1 "!" }}
 				{{ end }}
 				{{ sendMessage nil (complexMessage
 					"allowed_mentions" (sdict "parse" (cslice "users"))
